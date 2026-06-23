@@ -365,3 +365,5 @@ FodyWeavers.xsd
 vcpkg-configuration.json
 .idea/
 .supergoal/
+build/
+CMakePresets.json

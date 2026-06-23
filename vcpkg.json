@@ -1,4 +1,6 @@
 {
+    "name": "ospf-cpp",
+    "version-string": "0.1.0",
     "dependencies": [
         "boost-algorithm",
         "boost-bimap",
@@ -12,6 +14,9 @@
         "boost-test",
         "cryptopp",
         "magic-enum",
-        "rapidjson"
+        "rapidjson",
+        "fmt",
+        "nlohmann-json",
+        "gtest"
     ]
 }
