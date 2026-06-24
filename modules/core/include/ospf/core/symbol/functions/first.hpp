@@ -1,22 +1,20 @@
 #pragma once
-/// 符号函数: first / Symbol function: first
+/// 符号函数: first
 /// 1:1 对应 Rust core/symbol/functions/first.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <optional>
 
 namespace ospf::core {
 
-    /// first 符号函数 / first symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
     template<typename V = double>
-    class FirstFunction {
+    class FirstFunction : public VariadicFunctionSymbol<V> {
     public:
-        [[nodiscard]] static const char* name() noexcept { return "first"; }
-
-        // TODO: 填充实现（对照 Rust first.rs）
-        // TODO: Fill implementation (match Rust first.rs)
+        [[nodiscard]] const char* name() const noexcept override { return "first"; }
+        [[nodiscard]] std::optional<V> evaluate(const std::vector<V>& inputs) const override {
+            if (inputs.empty()) return std::nullopt;
+            return inputs[0];
+        }
     };
 
 }  // namespace ospf::core

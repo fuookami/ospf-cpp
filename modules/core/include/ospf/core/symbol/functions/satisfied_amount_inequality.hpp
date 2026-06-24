@@ -1,22 +1,27 @@
 #pragma once
-/// 符号函数: satisfied_amount_inequality / Symbol function: satisfied_amount_inequality
-/// 1:1 对应 Rust core/symbol/functions/satisfied_amount_inequality.rs
+/// ���ź���: satisfied_amount_inequality
+/// 1:1 ��Ӧ Rust core/symbol/functions/satisfied_amount_inequality.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <optional>
+#include <algorithm>
+#include <cmath>
 
 namespace ospf::core {
 
-    /// satisfied_amount_inequality 符号函数 / satisfied_amount_inequality symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
     template<typename V = double>
-    class Satisfied_amount_inequalityFunction {
+    class SatisfiedAmountInequalityFunction : public VariadicFunctionSymbol<V> {
     public:
-        [[nodiscard]] static const char* name() noexcept { return "satisfied_amount_inequality"; }
+        [[nodiscard]] const char* name() const noexcept override { return "satisfied_amount_inequality"; }
 
-        // TODO: 填充实现（对照 Rust satisfied_amount_inequality.rs）
-        // TODO: Fill implementation (match Rust satisfied_amount_inequality.rs)
+        [[nodiscard]] std::optional<V> evaluate(const std::vector<V>& inputs) const override {
+            if (inputs.size() < 2) return V{0};
+            V count = V{0};
+            for (std::size_t i = 0; i + 1 < inputs.size(); i += 2) {
+                if (inputs[i] <= inputs[i + 1]) count += V{1};
+            }
+            return count;
+        }
     };
 
 }  // namespace ospf::core

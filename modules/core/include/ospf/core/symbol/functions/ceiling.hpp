@@ -1,22 +1,21 @@
 #pragma once
-/// 符号函数: ceiling / Symbol function: ceiling
+/// 符号函数: ceiling
 /// 1:1 对应 Rust core/symbol/functions/ceiling.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <cmath>
+#include <optional>
 
 namespace ospf::core {
 
-    /// ceiling 符号函数 / ceiling symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
     template<typename V = double>
-    class CeilingFunction {
+    class CeilingFunction : public UnaryFunctionSymbol<V> {
     public:
-        [[nodiscard]] static const char* name() noexcept { return "ceiling"; }
-
-        // TODO: 填充实现（对照 Rust ceiling.rs）
-        // TODO: Fill implementation (match Rust ceiling.rs)
+        [[nodiscard]] const char* name() const noexcept override { return "ceiling"; }
+        [[nodiscard]] std::optional<V> evaluate_single(V input) const override {
+            if constexpr (std::is_arithmetic_v<V>) { return std::ceil(input); }
+            return std::nullopt;
+        }
     };
 
 }  // namespace ospf::core

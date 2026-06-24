@@ -1,22 +1,29 @@
 #pragma once
-/// 符号函数: big_m / Symbol function: big_m
+/// 符号函数: big_m
 /// 1:1 对应 Rust core/symbol/functions/big_m.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <optional>
+#include <algorithm>
 
 namespace ospf::core {
 
-    /// big_m 符号函数 / big_m symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
-    template<typename V = double>
-    class Big_mFunction {
-    public:
-        [[nodiscard]] static const char* name() noexcept { return "big_m"; }
+    struct BigMPolicy {
+        double fallback = 1000000.0;
+        double min = 1.0;
+        [[nodiscard]] double resolve(std::optional<double> inferred) const {
+            return std::max(inferred.value_or(fallback), min);
+        }
+    };
 
-        // TODO: 填充实现（对照 Rust big_m.rs）
-        // TODO: Fill implementation (match Rust big_m.rs)
+    template<typename V = double>
+    class BigMFunction : public VariadicFunctionSymbol<V> {
+    public:
+        [[nodiscard]] const char* name() const noexcept override { return "big_m"; }
+        [[nodiscard]] std::optional<V> evaluate(const std::vector<V>& inputs) const override {
+            if (inputs.empty()) return V{0};
+            return inputs[0];
+        }
     };
 
 }  // namespace ospf::core

@@ -1,22 +1,27 @@
 #pragma once
-/// 符号函数: quadratic_in_step_range / Symbol function: quadratic_in_step_range
-/// 1:1 对应 Rust core/symbol/functions/quadratic_in_step_range.rs
+/// ���ź���: quadratic_in_step_range
+/// 1:1 ��Ӧ Rust core/symbol/functions/quadratic_in_step_range.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <optional>
+#include <algorithm>
+#include <cmath>
 
 namespace ospf::core {
 
-    /// quadratic_in_step_range 符号函数 / quadratic_in_step_range symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
     template<typename V = double>
-    class Quadratic_in_step_rangeFunction {
+    class QuadraticInStepRangeFunction : public VariadicFunctionSymbol<V> {
     public:
-        [[nodiscard]] static const char* name() noexcept { return "quadratic_in_step_range"; }
+        [[nodiscard]] const char* name() const noexcept override { return "quadratic_in_step_range"; }
 
-        // TODO: 填充实现（对照 Rust quadratic_in_step_range.rs）
-        // TODO: Fill implementation (match Rust quadratic_in_step_range.rs)
+        [[nodiscard]] std::optional<V> evaluate(const std::vector<V>& inputs) const override {
+            if (inputs.size() < 3) return std::nullopt;
+            V value = inputs[0], lower = inputs[1], step = inputs[2];
+            V normalized = value - lower;
+            if (step == V{0}) return V{0};
+            V quotient = normalized / step;
+            return (quotient >= V{0} && quotient < V{1}) ? V{1} : V{0};
+        }
     };
 
 }  // namespace ospf::core

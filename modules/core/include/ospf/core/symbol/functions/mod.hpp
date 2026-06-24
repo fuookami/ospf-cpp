@@ -41,3 +41,25 @@
 #include <ospf/core/symbol/functions/slack.hpp>
 #include <ospf/core/symbol/functions/slack_range.hpp>
 #include <ospf/core/symbol/functions/univariate_linear_piecewise.hpp>
+
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <cmath>
+#include <optional>
+
+namespace ospf::core {
+
+    /// mod 符号函数 / mod symbol function
+    /// 1:1 对应 Rust core/symbol/functions/mod.rs
+    template<typename V = double>
+    class ModFunctionSimple : public BinaryFunctionSymbol<V> {
+    public:
+        [[nodiscard]] const char* name() const noexcept override { return "mod"; }
+
+        [[nodiscard]] std::optional<V> evaluate_binary(V a, V b) const override {
+            if (b == V{0}) return std::nullopt;
+            if constexpr (std::is_integral_v<V>) { return a % b; }
+            else { return std::fmod(a, b); }
+        }
+    };
+
+}  // namespace ospf::core

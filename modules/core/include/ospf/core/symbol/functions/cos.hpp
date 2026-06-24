@@ -1,22 +1,21 @@
 #pragma once
-/// 符号函数: cos / Symbol function: cos
+/// 符号函数: cos
 /// 1:1 对应 Rust core/symbol/functions/cos.rs
 
-#include <ospf/core/symbol/symbol_trait.hpp>
-#include <string>
+#include <ospf/core/symbol/function_symbol.hpp>
+#include <cmath>
+#include <optional>
 
 namespace ospf::core {
 
-    /// cos 符号函数 / cos symbol function
-    /// 优化建模用符号函数，非数学函数。
-    /// Symbol function for optimization modeling, not a mathematical function.
     template<typename V = double>
-    class CosFunction {
+    class CosFunction : public UnaryFunctionSymbol<V> {
     public:
-        [[nodiscard]] static const char* name() noexcept { return "cos"; }
-
-        // TODO: 填充实现（对照 Rust cos.rs）
-        // TODO: Fill implementation (match Rust cos.rs)
+        [[nodiscard]] const char* name() const noexcept override { return "cos"; }
+        [[nodiscard]] std::optional<V> evaluate_single(V input) const override {
+            if constexpr (std::is_arithmetic_v<V>) { return std::cos(input); }
+            return std::nullopt;
+        }
     };
 
 }  // namespace ospf::core
