@@ -1,3 +1,22 @@
 #pragma once
-/// Symbol function: sin /// 1:1 对应 Rust core/symbol/functions/sin.rs
-namespace ospf::core { /* placeholder */ }
+/// 符号函数: sin / Symbol function: sin
+/// 1:1 对应 Rust core/symbol/functions/sin.rs
+
+#include <ospf/core/symbol/symbol_trait.hpp>
+#include <string>
+
+namespace ospf::core {
+
+    /// sin 符号函数 / sin symbol function
+    /// 优化建模用符号函数，非数学函数。
+    /// Symbol function for optimization modeling, not a mathematical function.
+    template<typename V = double>
+    class SinFunction {
+    public:
+        [[nodiscard]] static const char* name() noexcept { return "sin"; }
+
+        // TODO: 填充实现（对照 Rust sin.rs）
+        // TODO: Fill implementation (match Rust sin.rs)
+    };
+
+}  // namespace ospf::core

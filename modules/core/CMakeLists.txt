@@ -12,6 +12,7 @@ find_package(GTest CONFIG REQUIRED)
 add_executable(ospf_core_tests
     tests/test_core.cpp
     tests/test_solver.cpp
+    tests/test_symbol_functions.cpp
 )
 target_link_libraries(ospf_core_tests PRIVATE ospf_core GTest::gtest GTest::gtest_main)
 include(GoogleTest)
