@@ -1,7 +1,8 @@
 #pragma once
 
 /// 形状定义 / Shape definitions
-/// Shape<N> 编译期维度，DynShape 运行期维度。
+/// 1:1 对应 Rust shape.rs — Shape<D, SO> 编译期形状，DynShape<SO> 运行期形状。
+/// SO 是类型参数（RowMajorTag / ColumnMajorTag），桥接运行时 StorageOrder 枚举。
 
 #include <ospf/multiarray/concept.hpp>
 #include <ospf/base/error.hpp>
@@ -14,18 +15,24 @@
 
 namespace ospf::multiarray {
 
+    // ============================================================================
+    // Shape<N, SO> — 编译期形状 / Compile-time shape
+    // ============================================================================
+
     /// 编译期形状 / Compile-time shape
-    template<std::size_t N, StorageOrder Order = StorageOrder::RowMajor>
+    /// N = 维度数（编译期常量），SO = 存储顺序类型（RowMajorTag / ColumnMajorTag）
+    /// N = dimension count (compile-time constant), SO = storage order type
+    template<std::size_t N, StorageOrderTrait SO = RowMajorTag>
     class Shape {
     public:
         static constexpr std::size_t DIMENSION = N;
-        static constexpr StorageOrder STORAGE_ORDER = Order;
-        using OrderTrait = StorageOrderTrait<Order>;
+        using StorageOrderType = SO;
+        using Ops = StorageOrderOps<SO>;
 
         /// 从维度大小数组构造 / Construct from dimension sizes
         explicit constexpr Shape(const std::array<std::size_t, N>& sizes)
-            : sizes_(sizes), offsets_(OrderTrait::offsets(sizes)),
-              total_size_(OrderTrait::total_size(sizes)) {}
+            : sizes_(sizes), offsets_(Ops::offsets(sizes)),
+              total_size_(Ops::total_size(sizes)) {}
 
         /// 获取维度数 / Get dimension count
         [[nodiscard]] constexpr std::size_t dimension() const noexcept { return N; }
@@ -42,8 +49,10 @@ namespace ospf::multiarray {
         /// 获取偏移量数组 / Get offsets array
         [[nodiscard]] constexpr const std::array<std::size_t, N>& offsets() const noexcept { return offsets_; }
 
-        /// 获取存储顺序 / Get storage order
-        [[nodiscard]] constexpr StorageOrder storage_order() const noexcept { return Order; }
+        /// 获取存储顺序（运行时） / Get storage order (runtime)
+        [[nodiscard]] constexpr StorageOrder storage_order() const noexcept {
+            return SO::runtime_value;
+        }
 
         /// 将多维索引转为线性索引 / Convert multi-dimensional index to linear index
         template<typename... Idx>
@@ -79,6 +88,12 @@ namespace ospf::multiarray {
             return true;
         }
 
+        /// 转换为指定存储顺序的形状 / Convert to shape with specified storage order
+        template<StorageOrderTrait NewSO>
+        [[nodiscard]] constexpr Shape<N, NewSO> with_storage_order() const {
+            return Shape<N, NewSO>(sizes_);
+        }
+
         [[nodiscard]] constexpr bool operator==(const Shape& other) const noexcept {
             return sizes_ == other.sizes_;
         }
@@ -89,16 +104,22 @@ namespace ospf::multiarray {
         std::size_t total_size_;
     };
 
+    // ============================================================================
+    // DynShape<SO> — 运行期形状 / Dynamic shape (runtime dimension)
+    // ============================================================================
+
     /// 动态形状 / Dynamic shape (runtime dimension)
-    template<StorageOrder Order = StorageOrder::RowMajor>
+    /// SO = 存储顺序类型（RowMajorTag / ColumnMajorTag）
+    template<StorageOrderTrait SO = RowMajorTag>
     class DynShape {
     public:
-        using OrderTrait = StorageOrderTrait<Order>;
+        using StorageOrderType = SO;
+        using Ops = StorageOrderOps<SO>;
 
         /// 从维度大小向量构造 / Construct from dimension sizes vector
         explicit DynShape(std::vector<std::size_t> sizes)
             : sizes_(std::move(sizes)),
-              offsets_(OrderTrait::dyn_offsets(sizes_)),
+              offsets_(Ops::dyn_offsets(sizes_)),
               total_size_(compute_total_size(sizes_)) {}
 
         /// 获取维度数 / Get dimension count
@@ -116,8 +137,10 @@ namespace ospf::multiarray {
         /// 获取偏移量向量 / Get offsets vector
         [[nodiscard]] const std::vector<std::size_t>& offsets() const noexcept { return offsets_; }
 
-        /// 获取存储顺序 / Get storage order
-        [[nodiscard]] StorageOrder storage_order() const noexcept { return Order; }
+        /// 获取存储顺序（运行时） / Get storage order (runtime)
+        [[nodiscard]] constexpr StorageOrder storage_order() const noexcept {
+            return SO::runtime_value;
+        }
 
         /// 将多维索引转为线性索引 / Convert multi-dimensional index to linear index
         [[nodiscard]] std::size_t index_of(const std::vector<std::size_t>& idx) const {
@@ -139,6 +162,12 @@ namespace ospf::multiarray {
             return idx;
         }
 
+        /// 转换为指定存储顺序的形状 / Convert to shape with specified storage order
+        template<StorageOrderTrait NewSO>
+        [[nodiscard]] DynShape<NewSO> with_storage_order() const {
+            return DynShape<NewSO>(sizes_);
+        }
+
         [[nodiscard]] bool operator==(const DynShape& other) const noexcept {
             return sizes_ == other.sizes_;
         }
@@ -155,5 +184,21 @@ namespace ospf::multiarray {
         std::vector<std::size_t> offsets_;
         std::size_t total_size_;
     };
+
+    // ============================================================================
+    // 向后兼容类型别名 / Backward compatibility aliases
+    // ============================================================================
+
+    /// 编译期形状（向后兼容，使用 StorageOrder 枚举值）
+    /// Compile-time shape (backward compatibility, uses StorageOrder enum value)
+    template<std::size_t N, StorageOrder Order = StorageOrder::RowMajor>
+    using ShapeCompat = Shape<N, std::conditional_t<
+        Order == StorageOrder::RowMajor, RowMajorTag, ColumnMajorTag>>;
+
+    /// 动态形状（向后兼容）
+    /// Dynamic shape (backward compatibility)
+    template<StorageOrder Order = StorageOrder::RowMajor>
+    using DynShapeCompat = DynShape<std::conditional_t<
+        Order == StorageOrder::RowMajor, RowMajorTag, ColumnMajorTag>>;
 
 }  // namespace ospf::multiarray

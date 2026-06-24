@@ -11,10 +11,10 @@
 namespace ospf::multiarray {
 
     /// 多维数组视图 / Multi-array view (non-owning)
-    template<typename T, std::size_t N, StorageOrder Order = StorageOrder::RowMajor>
+    template<typename T, std::size_t N, StorageOrderTrait SO = RowMajorTag>
     class MultiArrayView {
     public:
-        using ShapeType = Shape<N, Order>;
+        using ShapeType = Shape<N, SO>;
 
         MultiArrayView(T* data, const ShapeType& shape)
             : data_(data), shape_(shape) {}
@@ -43,10 +43,10 @@ namespace ospf::multiarray {
     };
 
     /// 动态维度视图 / Dynamic dimension view
-    template<typename T, StorageOrder Order = StorageOrder::RowMajor>
+    template<typename T, StorageOrderTrait SO = RowMajorTag>
     class DynMultiArrayView {
     public:
-        using ShapeType = DynShape<Order>;
+        using ShapeType = DynShape<SO>;
 
         DynMultiArrayView(T* data, const ShapeType& shape)
             : data_(data), shape_(shape) {}

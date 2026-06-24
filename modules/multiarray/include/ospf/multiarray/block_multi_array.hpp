@@ -12,10 +12,10 @@ namespace ospf::multiarray {
 
     /// 块多维数组 / Block multi-array
     /// 使用 ChunkedVec 存储数据，适合大型数组。
-    template<typename T, std::size_t N, StorageOrder Order = StorageOrder::RowMajor>
+    template<typename T, std::size_t N, StorageOrderTrait SO = RowMajorTag>
     class BlockMultiArray {
     public:
-        using ShapeType = Shape<N, Order>;
+        using ShapeType = Shape<N, SO>;
 
         BlockMultiArray(const ShapeType& shape, std::size_t chunk_size = ospf::base::DEFAULT_CHUNK_SIZE)
             : shape_(shape), data_(chunk_size) {

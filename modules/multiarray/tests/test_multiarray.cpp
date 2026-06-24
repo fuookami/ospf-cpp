@@ -35,12 +35,12 @@ TEST(StorageOrder, RowMajorOffsets) {
     // Shape [2, 3, 4] with RowMajor
     // offsets: [12, 4, 1]
     std::array<std::size_t, 3> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::RowMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<RowMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 12u);
     EXPECT_EQ(offsets[1], 4u);
     EXPECT_EQ(offsets[2], 1u);
 
-    auto total = StorageOrderTrait<StorageOrder::RowMajor>::total_size(shape);
+    auto total = StorageOrderOps<RowMajorTag>::total_size(shape);
     EXPECT_EQ(total, 24u);
 }
 
@@ -49,19 +49,19 @@ TEST(StorageOrder, ColumnMajorOffsets) {
     // Shape [2, 3, 4] with ColumnMajor
     // offsets: [1, 2, 6]
     std::array<std::size_t, 3> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<ColumnMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 2u);
     EXPECT_EQ(offsets[2], 6u);
 
-    auto total = StorageOrderTrait<StorageOrder::ColumnMajor>::total_size(shape);
+    auto total = StorageOrderOps<ColumnMajorTag>::total_size(shape);
     EXPECT_EQ(total, 24u);
 }
 
 // Rust: test_dyn_shape_row_major
 TEST(StorageOrder, DynRowMajorOffsets) {
     std::vector<std::size_t> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::RowMajor>::dyn_offsets(shape);
+    auto offsets = StorageOrderOps<RowMajorTag>::dyn_offsets(shape);
     EXPECT_EQ(offsets[0], 12u);
     EXPECT_EQ(offsets[1], 4u);
     EXPECT_EQ(offsets[2], 1u);
@@ -70,7 +70,7 @@ TEST(StorageOrder, DynRowMajorOffsets) {
 // Rust: test_dyn_shape_column_major
 TEST(StorageOrder, DynColumnMajorOffsets) {
     std::vector<std::size_t> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::dyn_offsets(shape);
+    auto offsets = StorageOrderOps<ColumnMajorTag>::dyn_offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 2u);
     EXPECT_EQ(offsets[2], 6u);
@@ -102,7 +102,7 @@ TEST(Shape, OneDimensional) {
 TEST(Shape, IndexCalculation) {
     // RowMajor: [2, 3, 4]
     // index_of(1, 2, 3) = 1*12 + 2*4 + 3*1 = 12 + 8 + 3 = 23
-    Shape<3, StorageOrder::RowMajor> shape({2, 3, 4});
+    Shape<3, RowMajorTag> shape({2, 3, 4});
     EXPECT_EQ(shape.index_of(0, 0, 0), 0u);
     EXPECT_EQ(shape.index_of(0, 0, 1), 1u);
     EXPECT_EQ(shape.index_of(0, 1, 0), 4u);
@@ -111,7 +111,7 @@ TEST(Shape, IndexCalculation) {
 
     // ColumnMajor: [2, 3, 4]
     // index_of(1, 2, 3) = 1*1 + 2*2 + 3*6 = 1 + 4 + 18 = 23
-    Shape<3, StorageOrder::ColumnMajor> col_shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> col_shape({2, 3, 4});
     EXPECT_EQ(col_shape.index_of(0, 0, 0), 0u);
     EXPECT_EQ(col_shape.index_of(1, 0, 0), 1u);
     EXPECT_EQ(col_shape.index_of(0, 1, 0), 2u);
@@ -121,7 +121,7 @@ TEST(Shape, IndexCalculation) {
 
 // Rust: test_vector_calculation
 TEST(Shape, VectorCalculation) {
-    Shape<3, StorageOrder::RowMajor> shape({2, 3, 4});
+    Shape<3, RowMajorTag> shape({2, 3, 4});
 
     auto v0 = shape.vector_of(0);
     EXPECT_EQ(v0[0], 0u);
@@ -136,7 +136,7 @@ TEST(Shape, VectorCalculation) {
 
 // Rust: test_index_vector_inverse
 TEST(Shape, IndexVectorInverse) {
-    Shape<3, StorageOrder::RowMajor> shape({2, 3, 4});
+    Shape<3, RowMajorTag> shape({2, 3, 4});
 
     // index_of 和 vector_of 互为逆操作
     for (std::size_t i = 0; i < shape.size(); ++i) {
@@ -155,7 +155,7 @@ TEST(Shape, LenOfDimension) {
 
 // Rust: test_offset_of_dimension
 TEST(Shape, OffsetOfDimension) {
-    Shape<3, StorageOrder::RowMajor> shape({2, 3, 4});
+    Shape<3, RowMajorTag> shape({2, 3, 4});
     auto offsets = shape.offsets();
     EXPECT_EQ(offsets[0], 12u);
     EXPECT_EQ(offsets[1], 4u);
@@ -185,7 +185,7 @@ TEST(Shape, Equality) {
 
 // Rust: test_dyn_shape_creation
 TEST(DynShape, Creation) {
-    DynShape<StorageOrder::RowMajor> shape({2, 3, 4});
+    DynShape<RowMajorTag> shape({2, 3, 4});
     EXPECT_EQ(shape.dimension(), 3u);
     EXPECT_EQ(shape.size(), 24u);
     EXPECT_EQ(shape.size(0), 2u);
@@ -194,13 +194,13 @@ TEST(DynShape, Creation) {
 }
 
 TEST(DynShape, IndexCalculation) {
-    DynShape<StorageOrder::RowMajor> shape({2, 3, 4});
+    DynShape<RowMajorTag> shape({2, 3, 4});
     EXPECT_EQ(shape.index_of({0, 0, 0}), 0u);
     EXPECT_EQ(shape.index_of({1, 2, 3}), 23u);
 }
 
 TEST(DynShape, VectorCalculation) {
-    DynShape<StorageOrder::RowMajor> shape({2, 3, 4});
+    DynShape<RowMajorTag> shape({2, 3, 4});
     auto v = shape.vector_of(23);
     ASSERT_EQ(v.size(), 3u);
     EXPECT_EQ(v[0], 1u);
@@ -260,8 +260,8 @@ TEST(MultiArray, AccessByLinearIndex) {
 // Rust: test_storage_order
 TEST(MultiArray, StorageOrder) {
     // RowMajor
-    Shape<2, StorageOrder::RowMajor> rm_shape({3, 4});
-    MultiArray<int, 2, StorageOrder::RowMajor> rm_arr(rm_shape);
+    Shape<2, RowMajorTag> rm_shape({3, 4});
+    MultiArray<int, 2, RowMajorTag> rm_arr(rm_shape);
     rm_arr.at(0, 0) = 1;
     rm_arr.at(0, 1) = 2;
     rm_arr.at(1, 0) = 3;
@@ -271,8 +271,8 @@ TEST(MultiArray, StorageOrder) {
     EXPECT_EQ(rm_arr[4], 3);
 
     // ColumnMajor
-    Shape<2, StorageOrder::ColumnMajor> cm_shape({3, 4});
-    MultiArray<int, 2, StorageOrder::ColumnMajor> cm_arr(cm_shape);
+    Shape<2, ColumnMajorTag> cm_shape({3, 4});
+    MultiArray<int, 2, ColumnMajorTag> cm_arr(cm_shape);
     cm_arr.at(0, 0) = 1;
     cm_arr.at(0, 1) = 2;
     cm_arr.at(1, 0) = 3;
@@ -446,8 +446,8 @@ TEST(Integration, ShapeAndArrayWorkflow) {
 }
 
 TEST(Integration, ColumnMajorWorkflow) {
-    Shape<2, StorageOrder::ColumnMajor> shape({3, 4});
-    MultiArray<int, 2, StorageOrder::ColumnMajor> arr(shape, 0);
+    Shape<2, ColumnMajorTag> shape({3, 4});
+    MultiArray<int, 2, ColumnMajorTag> arr(shape, 0);
 
     arr.at(0, 0) = 1;
     arr.at(1, 0) = 2;
@@ -514,7 +514,7 @@ TEST(Shape, OffsetsRowMajor) {
 }
 
 TEST(Shape, OffsetsColumnMajor) {
-    Shape<3, StorageOrder::ColumnMajor> shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> shape({2, 3, 4});
     auto offsets = shape.offsets();
     EXPECT_EQ(offsets[0], 1u);   // 1
     EXPECT_EQ(offsets[1], 2u);   // 2
@@ -560,9 +560,9 @@ TEST(DynShape, IndexVectorRoundTrip) {
 }
 
 TEST(DynShape, ColumnMajor) {
-    DynShape<StorageOrder::ColumnMajor> shape({3, 4});
+    DynShape<ColumnMajorTag> shape({3, 4});
     EXPECT_EQ(shape.size(), 12u);
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::dyn_offsets({3, 4});
+    auto offsets = StorageOrderOps<ColumnMajorTag>::dyn_offsets({3, 4});
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 3u);
 }
@@ -1116,26 +1116,26 @@ TEST(Einsum, BasicEinsum) {
 
 TEST(StorageOrder, RowMajor1D) {
     std::array<std::size_t, 1> shape = {5};
-    auto offsets = StorageOrderTrait<StorageOrder::RowMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<RowMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
 }
 
 TEST(StorageOrder, ColumnMajor1D) {
     std::array<std::size_t, 1> shape = {5};
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<ColumnMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
 }
 
 TEST(StorageOrder, RowMajor2D) {
     std::array<std::size_t, 2> shape = {3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::RowMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<RowMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 4u);
     EXPECT_EQ(offsets[1], 1u);
 }
 
 TEST(StorageOrder, ColumnMajor2D) {
     std::array<std::size_t, 2> shape = {3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::offsets(shape);
+    auto offsets = StorageOrderOps<ColumnMajorTag>::offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 3u);
 }
@@ -1215,7 +1215,7 @@ TEST(Shape, StorageOrderType) {
     Shape<2> rm({3, 4});
     EXPECT_EQ(rm.storage_order(), StorageOrder::RowMajor);
 
-    Shape<2, StorageOrder::ColumnMajor> cm({3, 4});
+    Shape<2, ColumnMajorTag> cm({3, 4});
     EXPECT_EQ(cm.storage_order(), StorageOrder::ColumnMajor);
 }
 
@@ -1287,21 +1287,21 @@ TEST(Shape, IndexOfLast) {
 }
 
 TEST(Shape, ColumnMajorVectorOf) {
-    Shape<3, StorageOrder::ColumnMajor> shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> shape({2, 3, 4});
     auto v = shape.vector_of(0);
     // vector_of(0) 总是全零
     EXPECT_EQ(shape.index_of(v[0], v[1], v[2]), 0u);
 }
 
 TEST(Shape, ColumnMajorVectorOfLast) {
-    Shape<3, StorageOrder::ColumnMajor> shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> shape({2, 3, 4});
     auto v = shape.vector_of(23);
     // 验证 vector_of 和 index_of 互逆（不预设具体值）
     EXPECT_EQ(shape.index_of(v[0], v[1], v[2]), 23u);
 }
 
 TEST(Shape, ColumnMajorIndexVectorRoundTrip) {
-    Shape<3, StorageOrder::ColumnMajor> shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> shape({2, 3, 4});
     for (std::size_t i = 0; i < shape.size(); ++i) {
         auto v = shape.vector_of(i);
         EXPECT_EQ(shape.index_of(v[0], v[1], v[2]), i);
@@ -1324,7 +1324,7 @@ TEST(Shape, Offsets4D) {
 }
 
 TEST(Shape, ColumnMajorOffsets4D) {
-    Shape<4, StorageOrder::ColumnMajor> shape({2, 3, 4, 5});
+    Shape<4, ColumnMajorTag> shape({2, 3, 4, 5});
     auto offsets = shape.offsets();
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 2u);
@@ -1366,7 +1366,7 @@ TEST(DynShape, StorageOrder) {
     DynShape<> rm({3, 4});
     EXPECT_EQ(rm.storage_order(), StorageOrder::RowMajor);
 
-    DynShape<StorageOrder::ColumnMajor> cm({3, 4});
+    DynShape<ColumnMajorTag> cm({3, 4});
     EXPECT_EQ(cm.storage_order(), StorageOrder::ColumnMajor);
 }
 
@@ -1578,10 +1578,10 @@ TEST(MultiArrayView, ConstView) {
 }
 
 TEST(MultiArrayView, ColumnMajorView) {
-    Shape<2, StorageOrder::ColumnMajor> shape({3, 4});
-    MultiArray<int, 2, StorageOrder::ColumnMajor> arr(shape, 0);
+    Shape<2, ColumnMajorTag> shape({3, 4});
+    MultiArray<int, 2, ColumnMajorTag> arr(shape, 0);
     arr.at(1, 0) = 42;
-    MultiArrayView<int, 2, StorageOrder::ColumnMajor> view(arr.data(), shape);
+    MultiArrayView<int, 2, ColumnMajorTag> view(arr.data(), shape);
     EXPECT_EQ(view.at(1, 0), 42);
 }
 
@@ -1646,13 +1646,13 @@ TEST(MapIndex, SwapMapping) {
 
 TEST(StorageOrder, TotalSize) {
     std::array<std::size_t, 3> shape = {2, 3, 4};
-    EXPECT_EQ(StorageOrderTrait<StorageOrder::RowMajor>::total_size(shape), 24u);
-    EXPECT_EQ(StorageOrderTrait<StorageOrder::ColumnMajor>::total_size(shape), 24u);
+    EXPECT_EQ(StorageOrderOps<RowMajorTag>::total_size(shape), 24u);
+    EXPECT_EQ(StorageOrderOps<ColumnMajorTag>::total_size(shape), 24u);
 }
 
 TEST(StorageOrder, DynOffsetsRowMajor) {
     std::vector<std::size_t> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::RowMajor>::dyn_offsets(shape);
+    auto offsets = StorageOrderOps<RowMajorTag>::dyn_offsets(shape);
     EXPECT_EQ(offsets[0], 12u);
     EXPECT_EQ(offsets[1], 4u);
     EXPECT_EQ(offsets[2], 1u);
@@ -1660,7 +1660,7 @@ TEST(StorageOrder, DynOffsetsRowMajor) {
 
 TEST(StorageOrder, DynOffsetsColumnMajor) {
     std::vector<std::size_t> shape = {2, 3, 4};
-    auto offsets = StorageOrderTrait<StorageOrder::ColumnMajor>::dyn_offsets(shape);
+    auto offsets = StorageOrderOps<ColumnMajorTag>::dyn_offsets(shape);
     EXPECT_EQ(offsets[0], 1u);
     EXPECT_EQ(offsets[1], 2u);
     EXPECT_EQ(offsets[2], 6u);
@@ -1668,8 +1668,8 @@ TEST(StorageOrder, DynOffsetsColumnMajor) {
 
 TEST(StorageOrder, SingleDimOffsets) {
     std::array<std::size_t, 1> shape = {10};
-    auto rm = StorageOrderTrait<StorageOrder::RowMajor>::offsets(shape);
-    auto cm = StorageOrderTrait<StorageOrder::ColumnMajor>::offsets(shape);
+    auto rm = StorageOrderOps<RowMajorTag>::offsets(shape);
+    auto cm = StorageOrderOps<ColumnMajorTag>::offsets(shape);
     EXPECT_EQ(rm[0], 1u);
     EXPECT_EQ(cm[0], 1u);
 }
@@ -1854,7 +1854,7 @@ TEST(Shape, OffsetConsistency) {
 
 TEST(Shape, ColumnMajorOffsetConsistency) {
     // ColumnMajor: offset[i] == size[0] * size[1] * ... * size[i-1]
-    Shape<3, StorageOrder::ColumnMajor> shape({2, 3, 4});
+    Shape<3, ColumnMajorTag> shape({2, 3, 4});
     auto offsets = shape.offsets();
     auto sizes = shape.sizes();
     EXPECT_EQ(offsets[0], 1u);

@@ -3,6 +3,7 @@
 /// MultiArray — 多维数组容器 / Multi-dimensional array container
 /// 1:1 对应 Rust multi_array.rs
 /// 支持编译期和运行期维度，行优先/列优先存储。
+/// SO 是类型参数（RowMajorTag / ColumnMajorTag），支持静态和动态存储顺序。
 
 #include <ospf/multiarray/shape.hpp>
 #include <cstddef>
@@ -12,11 +13,15 @@
 
 namespace ospf::multiarray {
 
+    // ============================================================================
+    // MultiArray<T, N, SO> — 编译期维度多维数组 / Compile-time dimension multi-array
+    // ============================================================================
+
     /// 编译期维度多维数组 / Compile-time dimension multi-array
-    template<typename T, std::size_t N, StorageOrder Order = StorageOrder::RowMajor>
+    template<typename T, std::size_t N, StorageOrderTrait SO = RowMajorTag>
     class MultiArray {
     public:
-        using ShapeType = Shape<N, Order>;
+        using ShapeType = Shape<N, SO>;
         using value_type = T;
 
         /// 从形状构造（元素默认初始化） / Construct from shape
@@ -47,6 +52,11 @@ namespace ospf::multiarray {
         [[nodiscard]] const ShapeType& shape() const noexcept { return shape_; }
         [[nodiscard]] std::size_t size() const noexcept { return data_.size(); }
         [[nodiscard]] std::size_t dimension() const noexcept { return N; }
+
+        /// 获取存储顺序（运行时） / Get storage order (runtime)
+        [[nodiscard]] constexpr StorageOrder storage_order() const noexcept {
+            return SO::runtime_value;
+        }
 
         // -- 数据访问 / Data access ---------------------------------------------
 
@@ -84,11 +94,15 @@ namespace ospf::multiarray {
         std::vector<T> data_;
     };
 
+    // ============================================================================
+    // DynMultiArray<T, SO> — 动态维度多维数组 / Dynamic dimension multi-array
+    // ============================================================================
+
     /// 动态维度多维数组 / Dynamic dimension multi-array
-    template<typename T, StorageOrder Order = StorageOrder::RowMajor>
+    template<typename T, StorageOrderTrait SO = RowMajorTag>
     class DynMultiArray {
     public:
-        using ShapeType = DynShape<Order>;
+        using ShapeType = DynShape<SO>;
         using value_type = T;
 
         explicit DynMultiArray(const ShapeType& shape)
@@ -111,6 +125,11 @@ namespace ospf::multiarray {
         [[nodiscard]] const ShapeType& shape() const noexcept { return shape_; }
         [[nodiscard]] std::size_t size() const noexcept { return data_.size(); }
         [[nodiscard]] std::size_t dimension() const noexcept { return shape_.dimension(); }
+
+        /// 获取存储顺序（运行时） / Get storage order (runtime)
+        [[nodiscard]] constexpr StorageOrder storage_order() const noexcept {
+            return SO::runtime_value;
+        }
 
         [[nodiscard]] T* data() noexcept { return data_.data(); }
         [[nodiscard]] const T* data() const noexcept { return data_.data(); }
