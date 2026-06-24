@@ -3,6 +3,7 @@
 /// 代数结构概念 / Algebraic structure concepts
 /// 半群、幺半群、群、阿贝尔群、环、域等。
 
+#include <ospf/math/algebra/real_number.hpp>
 #include <concepts>
 #include <type_traits>
 
@@ -79,9 +80,11 @@ namespace ospf::math::algebra {
 
     // -- 域 / Field -----------------------------------------------------------
 
-    /// 域：交换环 + 乘法群 / Field: commutative ring + multiplicative group
+    /// 域：交换环 + 乘法群 + 实数约束 / Field: commutative ring + multiplicative group + real number
+    /// Field refine RealNumber，确保数值语义完整。
+    /// Field refines RealNumber, ensuring complete numeric semantics.
     template<typename T>
-    concept Field = CommutativeRing<T> && MultiplicativeGroup<T>;
+    concept Field = CommutativeRing<T> && MultiplicativeGroup<T> && ospf::math::RealNumber<T>;
 
     // -- 全序 / TotallyOrdered ------------------------------------------------
 

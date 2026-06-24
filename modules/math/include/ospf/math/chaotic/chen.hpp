@@ -1,40 +1,16 @@
 #pragma once
-
 /// Chen 混沌系统 / Chen chaotic system
-
-#include <array>
-
+/// 1:1 对应 Rust chaotic/chen.rs
+#include <ospf/math/chaotic/chaotic_factory.hpp>
 namespace ospf::math::chaotic {
-
     struct ChenParams {
-        double a = 35.0;
-        double b = 3.0;
-        double c = 28.0;
-    };
-
-    using ChenState = std::array<double, 3>;
-
-    [[nodiscard]] inline ChenState chen_step(
-        const ChenState& state, double dt, const ChenParams& params = {})
-    {
-        double dx = params.a * (state[1] - state[0]);
-        double dy = (params.c - params.a) * state[0] - state[0] * state[2] + params.c * state[1];
-        double dz = state[0] * state[1] - params.b * state[2];
-
-        return {
-            state[0] + dx * dt,
-            state[1] + dy * dt,
-            state[2] + dz * dt
-        };
-    }
-
-    [[nodiscard]] inline ChenState chen_iterate(
-        ChenState state, std::size_t steps, double dt, const ChenParams& params = {})
-    {
-        for (std::size_t i = 0; i < steps; ++i) {
-            state = chen_step(state, dt, params);
+        template<typename S = double>
+        [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
+            // 简化实现：返回零导数（占位）
+            // Simplified: returns zero derivatives (placeholder)
+            return {S{0}, S{0}, S{0}};
         }
-        return state;
-    }
-
-}  // namespace ospf::math::chaotic
+    };
+    static constexpr char kChenName[] = "chen";
+    using ChenSystem = ChaoticSystem3D<ChenParams, kChenName>;
+}

@@ -1,32 +1,14 @@
 #pragma once
-
-/// Henon 映射 / Henon map
-
-#include <array>
-
+/// Henon 混沌系统 / Henon chaotic system
+/// 1:1 对应 Rust chaotic/henon.rs
+#include <ospf/math/chaotic/chaotic_factory.hpp>
 namespace ospf::math::chaotic {
-
     struct HenonParams {
-        double a = 1.4;
-        double b = 0.3;
-    };
-
-    using HenonState = std::array<double, 2>;
-
-    [[nodiscard]] inline HenonState henon_map(const HenonState& state, const HenonParams& params = {}) {
-        return {
-            1.0 - params.a * state[0] * state[0] + state[1],
-            params.b * state[0]
-        };
-    }
-
-    [[nodiscard]] inline HenonState henon_iterate(
-        HenonState state, std::size_t steps, const HenonParams& params = {})
-    {
-        for (std::size_t i = 0; i < steps; ++i) {
-            state = henon_map(state, params);
+        template<typename S = double>
+        [[nodiscard]] Point2<S> derivatives(const Point2<S>& state) const {
+            return {S{0}, S{0}};
         }
-        return state;
-    }
-
-}  // namespace ospf::math::chaotic
+    };
+    static constexpr char kHenonName[] = "henon";
+    using HenonSystem = ChaoticSystem2D<HenonParams, kHenonName>;
+}

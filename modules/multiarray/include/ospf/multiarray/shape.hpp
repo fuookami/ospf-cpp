@@ -4,7 +4,7 @@
 /// Shape<N> 编译期维度，DynShape 运行期维度。
 
 #include <ospf/multiarray/concept.hpp>
-#include <ospf/base/error/code.hpp>
+#include <ospf/base/error.hpp>
 #include <ospf/base/functional/result.hpp>
 #include <algorithm>
 #include <array>

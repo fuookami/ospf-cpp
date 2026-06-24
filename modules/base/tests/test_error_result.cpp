@@ -1,13 +1,11 @@
 /// ospf_base error/functional 测试
-/// 1:1 移植 ospf-rust-base/src/error.rs 全部 #[test]，并补充 LazyError/concepts/ExResult 覆盖。
+/// 1:1 移植 ospf-rust-base/src/error.rs 全部 #[test]，并补充 LazyError/concepts/ExResult/RealNumber 覆盖。
 
 #include <gtest/gtest.h>
 
-#include <ospf/base/error/code.hpp>
-#include <ospf/base/error/error.hpp>
-#include <ospf/base/error/ex_error.hpp>
-#include <ospf/base/error/lazy_error.hpp>
+#include <ospf/base/error.hpp>
 #include <ospf/base/functional/result.hpp>
+#include <ospf/base/functional/ex_result.hpp>
 #include <ospf/base/functional/either.hpp>
 #include <ospf/base/functional/range_bounds.hpp>
 #include <ospf/base/functional/integer_iterator.hpp>

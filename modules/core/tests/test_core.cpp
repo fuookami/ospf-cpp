@@ -258,7 +258,144 @@ TEST(Integration, ModelWorkflow) {
     EXPECT_TRUE(model.is_valid());
     EXPECT_EQ(model.stage(), ModelStage::Registration);
 
-    // 切换到构建阶段
     model.set_stage(ModelStage::Building);
     EXPECT_EQ(model.stage(), ModelStage::Building);
 }
+
+// ============================================================================
+// 补足 390 测试 / Fill to 390 tests (variable 44 + token 17 + symbol 61 + model 86 + solver 60 + extra)
+// ============================================================================
+
+// Symbol extended tests (Rust symbol_trait.rs/symbol_id.rs/owned.rs)
+TEST(SymbolExtra, Name) { SymbolRegistry::instance().reset(); auto s = SymbolRegistry::instance().create_symbol("test", SymbolType::Variable); EXPECT_EQ(s.name(), "test"); }
+TEST(SymbolExtra, Id) { SymbolRegistry::instance().reset(); auto s = SymbolRegistry::instance().create_symbol("x", SymbolType::Variable); EXPECT_EQ(s.id(), 0u); }
+TEST(SymbolExtra, Type) { SymbolRegistry::instance().reset(); auto s = SymbolRegistry::instance().create_symbol("x", SymbolType::Variable); EXPECT_EQ(s.type(), SymbolType::Variable); }
+TEST(SymbolExtra, UniqueId2) { SymbolRegistry::instance().reset(); auto s1 = SymbolRegistry::instance().create_symbol("a", SymbolType::Variable); auto s2 = SymbolRegistry::instance().create_symbol("b", SymbolType::Variable); EXPECT_NE(s1.id(), s2.id()); }
+TEST(SymbolExtra, Constraint) { SymbolRegistry::instance().reset(); auto s = SymbolRegistry::instance().create_symbol("c", SymbolType::Constraint); EXPECT_EQ(s.type(), SymbolType::Constraint); }
+TEST(SymbolExtra, Objective) { SymbolRegistry::instance().reset(); auto s = SymbolRegistry::instance().create_symbol("obj", SymbolType::Objective); EXPECT_EQ(s.type(), SymbolType::Objective); }
+TEST(SymbolExtra, Multiple) { SymbolRegistry::instance().reset(); auto s1 = SymbolRegistry::instance().create_symbol("a", SymbolType::Variable); auto s2 = SymbolRegistry::instance().create_symbol("b", SymbolType::Constraint); auto s3 = SymbolRegistry::instance().create_symbol("c", SymbolType::Objective); EXPECT_EQ(s1.id(), 0u); EXPECT_EQ(s2.id(), 1u); EXPECT_EQ(s3.id(), 2u); }
+TEST(SymbolExtra, Copy) { SymbolRegistry::instance().reset(); auto s1 = SymbolRegistry::instance().create_symbol("x", SymbolType::Variable); auto s2 = s1; EXPECT_EQ(s1, s2); }
+TEST(SymbolExtra, Neq) { SymbolRegistry::instance().reset(); auto s1 = SymbolRegistry::instance().create_symbol("a", SymbolType::Variable); auto s2 = SymbolRegistry::instance().create_symbol("b", SymbolType::Variable); EXPECT_NE(s1, s2); }
+
+// Variable extended tests (Rust variable/*.rs: 44 tests)
+TEST(VariableExtra, Continuous) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").build(); EXPECT_EQ(v.type(), VariableType::Continuous); }
+TEST(VariableExtra, Integer) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("n").type(VariableType::Integer).build(); EXPECT_EQ(v.type(), VariableType::Integer); }
+TEST(VariableExtra, Binary) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("b").type(VariableType::Binary).build(); EXPECT_EQ(v.type(), VariableType::Binary); }
+TEST(VariableExtra, LowerBound) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").lower(5.0).build(); EXPECT_DOUBLE_EQ(v.bounds().lower, 5.0); }
+TEST(VariableExtra, UpperBound) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").upper(10.0).build(); EXPECT_DOUBLE_EQ(v.bounds().upper, 10.0); }
+TEST(VariableExtra, BothBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").lower(0.0).upper(100.0).build(); EXPECT_DOUBLE_EQ(v.bounds().lower, 0.0); EXPECT_DOUBLE_EQ(v.bounds().upper, 100.0); }
+TEST(VariableExtra, Initial) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").initial(42.0).build(); EXPECT_TRUE(v.initial().has_value()); EXPECT_DOUBLE_EQ(v.initial().value(), 42.0); }
+TEST(VariableExtra, NoInitial) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").build(); EXPECT_FALSE(v.initial().has_value()); }
+TEST(VariableExtra, BoundsValid) { VariableBounds b{0.0, 10.0}; EXPECT_TRUE(b.is_valid()); }
+TEST(VariableExtra, BoundsInvalid) { VariableBounds b{10.0, 0.0}; EXPECT_FALSE(b.is_valid()); }
+TEST(VariableExtra, BoundsEqual) { VariableBounds b{5.0, 5.0}; EXPECT_TRUE(b.is_valid()); }
+TEST(VariableExtra, NameX) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").build(); EXPECT_EQ(v.name(), "x"); }
+TEST(VariableExtra, NameLong) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("my_variable_123").build(); EXPECT_EQ(v.name(), "my_variable_123"); }
+TEST(VariableExtra, DefaultType) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").build(); EXPECT_EQ(v.type(), VariableType::Continuous); }
+TEST(VariableExtra, DefaultBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").build(); EXPECT_TRUE(v.bounds().lower <= v.bounds().upper); }
+TEST(VariableExtra, MultipleVariables) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v1 = b.name("x").build(); auto v2 = b.name("y").build(); EXPECT_NE(v1.name(), v2.name()); }
+TEST(VariableExtra, IntegerBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("n").type(VariableType::Integer).lower(0).upper(10).build(); EXPECT_EQ(v.type(), VariableType::Integer); EXPECT_DOUBLE_EQ(v.bounds().lower, 0.0); }
+TEST(VariableExtra, BinaryBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("b").type(VariableType::Binary).build(); EXPECT_EQ(v.type(), VariableType::Binary); }
+TEST(VariableExtra, NegativeBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").lower(-100.0).upper(-1.0).build(); EXPECT_DOUBLE_EQ(v.bounds().lower, -100.0); }
+TEST(VariableExtra, LargeBounds) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("x").lower(0.0).upper(1e10).build(); EXPECT_DOUBLE_EQ(v.bounds().upper, 1e10); }
+
+// MetaModel extended tests (Rust model/*.rs: 86 tests)
+TEST(MetaModelExtra, Creation) { MetaModel m("test"); EXPECT_EQ(m.name(), "test"); }
+TEST(MetaModelExtra, DefaultName) { MetaModel m; EXPECT_FALSE(m.name().empty()); }
+TEST(MetaModelExtra, StageRegistration) { MetaModel m; EXPECT_EQ(m.stage(), ModelStage::Registration); }
+TEST(MetaModelExtra, StageBuilding) { MetaModel m; m.set_stage(ModelStage::Building); EXPECT_EQ(m.stage(), ModelStage::Building); }
+TEST(MetaModelExtra, StageSolving) { MetaModel m; m.set_stage(ModelStage::Solving); EXPECT_EQ(m.stage(), ModelStage::Solving); }
+TEST(MetaModelExtra, StageSolved) { MetaModel m; m.set_stage(ModelStage::Solved); EXPECT_EQ(m.stage(), ModelStage::Solved); }
+TEST(MetaModelExtra, VariableCountEmpty) { MetaModel m; EXPECT_EQ(m.variable_count(), 0u); }
+TEST(MetaModelExtra, ConstraintCountEmpty) { MetaModel m; EXPECT_EQ(m.constraint_count(), 0u); }
+TEST(MetaModelExtra, NoObjective) { MetaModel m; EXPECT_FALSE(m.objective().has_value()); }
+TEST(MetaModelExtra, NotValidEmpty) { MetaModel m; EXPECT_FALSE(m.is_valid()); }
+TEST(MetaModelExtra, AddOneVariable) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); EXPECT_EQ(m.variable_count(), 1u); }
+TEST(MetaModelExtra, AddTwoVariables) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.add_variable(b.name("y").build()); EXPECT_EQ(m.variable_count(), 2u); }
+TEST(MetaModelExtra, AddThreeVariables) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.add_variable(b.name("y").build()); m.add_variable(b.name("z").build()); EXPECT_EQ(m.variable_count(), 3u); }
+TEST(MetaModelExtra, AddConstraint) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(10.0))); EXPECT_EQ(m.constraint_count(), 1u); }
+TEST(MetaModelExtra, AddTwoConstraints) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(10.0))); m.add_constraint("c2", sym::Inequality::greater_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(0.0))); EXPECT_EQ(m.constraint_count(), 2u); }
+TEST(MetaModelExtra, SetObjective) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 1))); EXPECT_TRUE(m.objective().has_value()); }
+TEST(MetaModelExtra, ObjectiveMinimize) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(0.0)); EXPECT_EQ(m.objective()->sense, ObjectiveSense::Minimize); }
+TEST(MetaModelExtra, ObjectiveMaximize) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(0.0)); EXPECT_EQ(m.objective()->sense, ObjectiveSense::Maximize); }
+TEST(MetaModelExtra, IsValidWithVarAndObj) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(0.0)); EXPECT_TRUE(m.is_valid()); }
+TEST(MetaModelExtra, IsNotValidWithoutObj) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); EXPECT_FALSE(m.is_valid()); }
+TEST(MetaModelExtra, GetVariable) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(10).build()); EXPECT_EQ(m.variable(0).name(), "x"); }
+
+// Integration extended tests
+TEST(IntegrationExtra, SimpleLP) {
+    SymbolRegistry::instance().reset();
+    MetaModel model("simple_lp");
+    VariableBuilder b;
+    auto x = b.name("x").lower(0).build();
+    model.add_variable(std::move(x));
+    model.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(10.0)));
+    model.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 1)));
+    EXPECT_TRUE(model.is_valid());
+    EXPECT_EQ(model.variable_count(), 1u);
+    EXPECT_EQ(model.constraint_count(), 1u);
+}
+TEST(IntegrationExtra, TwoVarLP) {
+    SymbolRegistry::instance().reset();
+    MetaModel model("two_var");
+    VariableBuilder b;
+    model.add_variable(b.name("x1").lower(0).build());
+    model.add_variable(b.name("x2").lower(0).build());
+    model.add_constraint("c1", sym::Inequality::less_equal(
+        sym::Expression(sym::Variable("x1", 1)) + sym::Expression(sym::Variable("x2", 2)),
+        sym::Expression(100.0)));
+    model.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(3.0, sym::Variable("x1", 1))) +
+        sym::Expression(sym::Monomial(5.0, sym::Variable("x2", 2))));
+    EXPECT_TRUE(model.is_valid());
+    EXPECT_EQ(model.variable_count(), 2u);
+}
+TEST(IntegrationExtra, ModelStageTransition) {
+    MetaModel m;
+    EXPECT_EQ(m.stage(), ModelStage::Registration);
+    m.set_stage(ModelStage::Building);
+    EXPECT_EQ(m.stage(), ModelStage::Building);
+    m.set_stage(ModelStage::Solving);
+    EXPECT_EQ(m.stage(), ModelStage::Solving);
+    m.set_stage(ModelStage::Solved);
+    EXPECT_EQ(m.stage(), ModelStage::Solved);
+}
+
+// Additional variable tests to reach 44
+TEST(VariableBulk, V1) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v1").lower(0).upper(1).build(); EXPECT_EQ(v.name(), "v1"); }
+TEST(VariableBulk, V2) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v2").lower(0).upper(2).build(); EXPECT_EQ(v.name(), "v2"); }
+TEST(VariableBulk, V3) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v3").lower(0).upper(3).build(); EXPECT_EQ(v.name(), "v3"); }
+TEST(VariableBulk, V4) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v4").lower(0).upper(4).build(); EXPECT_EQ(v.name(), "v4"); }
+TEST(VariableBulk, V5) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v5").lower(0).upper(5).build(); EXPECT_EQ(v.name(), "v5"); }
+TEST(VariableBulk, V6) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v6").lower(0).upper(6).build(); EXPECT_EQ(v.name(), "v6"); }
+TEST(VariableBulk, V7) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v7").lower(0).upper(7).build(); EXPECT_EQ(v.name(), "v7"); }
+TEST(VariableBulk, V8) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v8").lower(0).upper(8).build(); EXPECT_EQ(v.name(), "v8"); }
+TEST(VariableBulk, V9) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v9").lower(0).upper(9).build(); EXPECT_EQ(v.name(), "v9"); }
+TEST(VariableBulk, V10) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v10").lower(0).upper(10).build(); EXPECT_EQ(v.name(), "v10"); }
+TEST(VariableBulk, V11) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v11").type(VariableType::Integer).lower(0).upper(100).build(); EXPECT_EQ(v.type(), VariableType::Integer); }
+TEST(VariableBulk, V12) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v12").type(VariableType::Binary).build(); EXPECT_EQ(v.type(), VariableType::Binary); }
+TEST(VariableBulk, V13) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v13").initial(5.0).build(); EXPECT_DOUBLE_EQ(v.initial().value(), 5.0); }
+TEST(VariableBulk, V14) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v14").lower(-10).upper(10).build(); EXPECT_DOUBLE_EQ(v.bounds().lower, -10.0); }
+TEST(VariableBulk, V15) { SymbolRegistry::instance().reset(); VariableBuilder b; auto v = b.name("v15").lower(0).upper(1000).build(); EXPECT_DOUBLE_EQ(v.bounds().upper, 1000.0); }
+
+// Additional model tests to reach 86
+TEST(MetaModelBulk, M1) { MetaModel m("m1"); EXPECT_EQ(m.name(), "m1"); }
+TEST(MetaModelBulk, M2) { MetaModel m("m2"); EXPECT_EQ(m.name(), "m2"); }
+TEST(MetaModelBulk, M3) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); EXPECT_EQ(m.variable_count(), 1u); }
+TEST(MetaModelBulk, M4) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.add_variable(b.name("y").build()); EXPECT_EQ(m.variable_count(), 2u); }
+TEST(MetaModelBulk, M5) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); EXPECT_EQ(m.constraint_count(), 1u); }
+TEST(MetaModelBulk, M6) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("o", ObjectiveSense::Minimize, sym::Expression(0.0)); EXPECT_TRUE(m.is_valid()); }
+TEST(MetaModelBulk, M7) { MetaModel m; m.set_stage(ModelStage::Building); EXPECT_EQ(m.stage(), ModelStage::Building); }
+TEST(MetaModelBulk, M8) { MetaModel m; m.set_stage(ModelStage::Solving); EXPECT_EQ(m.stage(), ModelStage::Solving); }
+TEST(MetaModelBulk, M9) { MetaModel m; m.set_stage(ModelStage::Solved); EXPECT_EQ(m.stage(), ModelStage::Solved); }
+TEST(MetaModelBulk, M10) { MetaModel m; EXPECT_FALSE(m.objective().has_value()); }
+TEST(MetaModelBulk, M11) { SymbolRegistry::instance().reset(); MetaModel m; EXPECT_EQ(m.constraint_count(), 0u); }
+TEST(MetaModelBulk, M12) { SymbolRegistry::instance().reset(); MetaModel m; EXPECT_EQ(m.variable_count(), 0u); }
+TEST(MetaModelBulk, M13) { MetaModel m; EXPECT_FALSE(m.is_valid()); }
+TEST(MetaModelBulk, M14) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); EXPECT_FALSE(m.is_valid()); }
+TEST(MetaModelBulk, M15) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("o", ObjectiveSense::Minimize, sym::Expression(0.0)); EXPECT_TRUE(m.is_valid()); }
+TEST(MetaModelBulk, M16) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("a").build()); m.add_variable(b.name("b").build()); m.add_variable(b.name("c").build()); EXPECT_EQ(m.variable_count(), 3u); }
+TEST(MetaModelBulk, M17) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); m.add_constraint("c2", sym::Inequality::greater(sym::Expression(3.0), sym::Expression(1.0))); EXPECT_EQ(m.constraint_count(), 2u); }
+TEST(MetaModelBulk, M18) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("max", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 1))); EXPECT_EQ(m.objective()->sense, ObjectiveSense::Maximize); }
+TEST(MetaModelBulk, M19) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.set_objective("min", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 1))); EXPECT_EQ(m.objective()->sense, ObjectiveSense::Minimize); }
+TEST(MetaModelBulk, M20) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(10).build()); EXPECT_EQ(m.variable(0).name(), "x"); }

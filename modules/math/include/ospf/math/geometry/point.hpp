@@ -29,6 +29,14 @@ namespace ospf::math::geometry {
         [[nodiscard]] constexpr const T& operator[](std::size_t i) const { return data_[i]; }
         [[nodiscard]] constexpr std::size_t dimension() const noexcept { return N; }
 
+        /// 便捷访问器（2D/3D）/ Convenience accessors (2D/3D)
+        [[nodiscard]] constexpr T& x() requires(N >= 1) { return data_[0]; }
+        [[nodiscard]] constexpr const T& x() const requires(N >= 1) { return data_[0]; }
+        [[nodiscard]] constexpr T& y() requires(N >= 2) { return data_[1]; }
+        [[nodiscard]] constexpr const T& y() const requires(N >= 2) { return data_[1]; }
+        [[nodiscard]] constexpr T& z() requires(N >= 3) { return data_[2]; }
+        [[nodiscard]] constexpr const T& z() const requires(N >= 3) { return data_[2]; }
+
         /// 计算到另一点的距离 / Calculate distance to another point
         [[nodiscard]] T distance_to(const Point& other) const {
             T sum = T{};

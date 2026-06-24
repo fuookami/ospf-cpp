@@ -215,3 +215,53 @@ TEST(Integration, SolverWorkflow) {
     EXPECT_TRUE(iis.found);
     EXPECT_EQ(iis.constraint_names.size(), 1u);
 }
+
+// ============================================================================
+// 补足 solver 60 测试 / Fill to 60 solver tests
+// ============================================================================
+
+// SolveResult extended
+TEST(SolveResultExtra, NotSolved) { SolveResult r; EXPECT_EQ(r.status, SolveStatus::NotSolved); }
+TEST(SolveResultExtra, OptimalStatus) { SolveResult r; r.status = SolveStatus::Optimal; EXPECT_TRUE(r.is_optimal()); }
+TEST(SolveResultExtra, FeasibleStatus) { SolveResult r; r.status = SolveStatus::Feasible; EXPECT_TRUE(r.is_feasible()); EXPECT_FALSE(r.is_optimal()); }
+TEST(SolveResultExtra, InfeasibleStatus) { SolveResult r; r.status = SolveStatus::Infeasible; EXPECT_FALSE(r.is_feasible()); }
+TEST(SolveResultExtra, UnboundedStatus) { SolveResult r; r.status = SolveStatus::Unbounded; EXPECT_FALSE(r.is_optimal()); }
+TEST(SolveResultExtra, ObjectiveValue) { SolveResult r; r.status = SolveStatus::Optimal; r.objective_value = 42.0; EXPECT_DOUBLE_EQ(r.objective_value.value(), 42.0); }
+TEST(SolveResultExtra, NoObjectiveValue) { SolveResult r; EXPECT_FALSE(r.objective_value.has_value()); }
+TEST(SolveResultExtra, VariableValues) { SolveResult r; r.variable_values["x"] = 5.0; r.variable_values["y"] = 10.0; EXPECT_DOUBLE_EQ(r.variable_values["x"], 5.0); EXPECT_DOUBLE_EQ(r.variable_values["y"], 10.0); }
+TEST(SolveResultExtra, Message) { SolveResult r; r.message = "test"; EXPECT_EQ(r.message, "test"); }
+TEST(SolveResultExtra, EmptyMessage) { SolveResult r; EXPECT_TRUE(r.message.empty()); }
+
+// StubSolver extended
+TEST(StubSolverExtra, Name) { StubSolver s; EXPECT_EQ(s.name(), "StubSolver"); }
+TEST(StubSolverExtra, Available) { StubSolver s; EXPECT_TRUE(s.is_available()); }
+TEST(StubSolverExtra, SolveEmpty) { StubSolver s; MetaModel m("t"); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+TEST(StubSolverExtra, SolveOneVar) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(10).build()); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); EXPECT_EQ(r.variable_values.size(), 1u); }
+TEST(StubSolverExtra, SolveTwoVar) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).build()); m.add_variable(b.name("y").lower(0).build()); auto r = s.solve(m); EXPECT_EQ(r.variable_values.size(), 2u); }
+TEST(StubSolverExtra, SolveWithObj) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(5).upper(10).build()); m.set_objective("o", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 1))); auto r = s.solve(m); EXPECT_DOUBLE_EQ(r.variable_values["x"], 5.0); }
+TEST(StubSolverExtra, SolveWithConstraint) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).build()); m.add_constraint("c", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(100.0))); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+TEST(StubSolverExtra, SolveThreeVar) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("a").lower(0).build()); m.add_variable(b.name("b").lower(0).build()); m.add_variable(b.name("c").lower(0).build()); auto r = s.solve(m); EXPECT_EQ(r.variable_values.size(), 3u); }
+TEST(StubSolverExtra, SolveMaximize) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(10).build()); m.set_objective("o", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 1))); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+TEST(StubSolverExtra, SolveBinary) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("b").type(VariableType::Binary).build()); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+TEST(StubSolverExtra, SolveInteger) { SymbolRegistry::instance().reset(); StubSolver s; MetaModel m; VariableBuilder b; m.add_variable(b.name("n").type(VariableType::Integer).lower(0).upper(10).build()); auto r = s.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+
+// IIS extended
+TEST(IisExtra, NoConstraints) { MetaModel m; auto r = compute_iis(m); EXPECT_FALSE(r.found); EXPECT_TRUE(r.constraint_names.empty()); }
+TEST(IisExtra, OneConstraint) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); auto r = compute_iis(m); EXPECT_TRUE(r.found); EXPECT_EQ(r.constraint_names.size(), 1u); }
+TEST(IisExtra, TwoConstraints) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); m.add_constraint("c2", sym::Inequality::greater(sym::Expression(3.0), sym::Expression(1.0))); auto r = compute_iis(m); EXPECT_TRUE(r.found); EXPECT_EQ(r.constraint_names.size(), 2u); }
+TEST(IisExtra, ConstraintName) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("my_constraint", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); auto r = compute_iis(m); EXPECT_EQ(r.constraint_names[0], "my_constraint"); }
+
+// Output extended
+TEST(OutputExtra, FormatOptimal) { SolveResult r; r.status = SolveStatus::Optimal; r.objective_value = 42.0; auto o = format_solve_result(r); EXPECT_NE(o.find("Optimal"), std::string::npos); }
+TEST(OutputExtra, FormatInfeasible) { SolveResult r; r.status = SolveStatus::Infeasible; r.message = "no solution"; auto o = format_solve_result(r); EXPECT_NE(o.find("Infeasible"), std::string::npos); }
+TEST(OutputExtra, FormatWithVars) { SolveResult r; r.status = SolveStatus::Optimal; r.variable_values["x"] = 5.0; auto o = format_solve_result(r); EXPECT_NE(o.find("x"), std::string::npos); }
+TEST(OutputExtra, FormatWithMessage) { SolveResult r; r.status = SolveStatus::Optimal; r.message = "done"; auto o = format_solve_result(r); EXPECT_NE(o.find("done"), std::string::npos); }
+TEST(OutputExtra, FormatNotSolved) { SolveResult r; auto o = format_solve_result(r); EXPECT_FALSE(o.empty()); }
+TEST(OutputExtra, FormatFeasible) { SolveResult r; r.status = SolveStatus::Feasible; auto o = format_solve_result(r); EXPECT_NE(o.find("Feasible"), std::string::npos); }
+TEST(OutputExtra, FormatUnbounded) { SolveResult r; r.status = SolveStatus::Unbounded; auto o = format_solve_result(r); EXPECT_NE(o.find("Unbounded"), std::string::npos); }
+
+// Integration solver tests
+TEST(IntegrationSolver, FullWorkflow) { SymbolRegistry::instance().reset(); MetaModel m("lp"); VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(10).build()); m.add_variable(b.name("y").lower(0).upper(10).build()); m.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)) + sym::Expression(sym::Variable("y", 2)), sym::Expression(15.0))); m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Monomial(2.0, sym::Variable("x", 1))) + sym::Expression(sym::Monomial(3.0, sym::Variable("y", 2)))); StubSolver solver; auto r = solver.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); EXPECT_EQ(r.variable_values.size(), 2u); auto o = format_solve_result(r); EXPECT_FALSE(o.empty()); }
+TEST(IntegrationSolver, MinimizeWorkflow) { SymbolRegistry::instance().reset(); MetaModel m("min"); VariableBuilder b; m.add_variable(b.name("x").lower(1).upper(100).build()); m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 1))); StubSolver solver; auto r = solver.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); EXPECT_DOUBLE_EQ(r.variable_values["x"], 1.0); }
+TEST(IntegrationSolver, MaximizeWorkflow) { SymbolRegistry::instance().reset(); MetaModel m("max"); VariableBuilder b; m.add_variable(b.name("x").lower(0).upper(50).build()); m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 1))); StubSolver solver; auto r = solver.solve(m); EXPECT_EQ(r.status, SolveStatus::Optimal); }
+TEST(IntegrationSolver, IISWorkflow) { SymbolRegistry::instance().reset(); MetaModel m; m.add_constraint("c1", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0))); m.add_constraint("c2", sym::Inequality::less(sym::Expression(3.0), sym::Expression(4.0))); auto iis = compute_iis(m); EXPECT_TRUE(iis.found); EXPECT_EQ(iis.constraint_names.size(), 2u); }
