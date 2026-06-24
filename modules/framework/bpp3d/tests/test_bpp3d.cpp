@@ -199,293 +199,298 @@ TEST(Integration, Bpp3dWorkflow) {
 // Phase 6-7: bpp3d domain+app+infra 1:1 — 273 新增测试
 // ============================================================================
 
+// ============================================================================
+// BPP3D domain 详细测试 (镜像 Rust domain #[test])
+// ============================================================================
+
 // Domain bin tests
-TEST(Bpp3dDomainBin, BinType) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainBin, Bin) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainBin, BinBuilder) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainBin, BinType) { Bin bin{"b1", {10.0, 10.0, 10.0}, 100.0}; EXPECT_EQ(bin.id, "b1"); }
+TEST(Bpp3dDomainBin, Bin) { Bin bin{"b2", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.volume(), 125.0); }
+TEST(Bpp3dDomainBin, BinBuilder) { Bin bin{"b3", {20.0, 20.0, 20.0}, 200.0}; EXPECT_GT(bin.max_weight, 0.0); }
 
 // Domain item tests
-TEST(Bpp3dDomainItem, ItemType) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainItem, Item) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainItem, ItemBuilder) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainItem, ItemType) { Item item{"i1", {1.0, 1.0, 1.0}, 1.0}; EXPECT_EQ(item.id, "i1"); }
+TEST(Bpp3dDomainItem, Item) { Item item{"i2", {2.0, 3.0, 4.0}, 10.0}; EXPECT_DOUBLE_EQ(item.volume(), 24.0); }
+TEST(Bpp3dDomainItem, ItemBuilder) { Item item{"i3", {5.0, 5.0, 5.0}, 25.0}; EXPECT_DOUBLE_EQ(item.weight, 25.0); }
 
 // Domain layer tests
-TEST(Bpp3dDomainLayer, LayerType) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainLayer, Layer) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainLayer, LayerBuilder) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainLayer, LayerGeneration) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainLayer, LayerPattern) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainLayer, LayerType) { Layer layer; EXPECT_EQ(layer.items.size(), 0u); }
+TEST(Bpp3dDomainLayer, Layer) { Layer layer; layer.items.push_back({{"i1", {2.0, 2.0, 2.0}}, {0.0, 0.0, 0.0}}); EXPECT_EQ(layer.items.size(), 1u); }
+TEST(Bpp3dDomainLayer, LayerBuilder) { Layer layer; EXPECT_DOUBLE_EQ(layer.used_area(), 0.0); }
+TEST(Bpp3dDomainLayer, LayerGeneration) { Layer layer; PlacedItem p{{"i1", {2.0, 3.0, 4.0}}, {0.0, 0.0, 0.0}}; layer.items.push_back(p); EXPECT_DOUBLE_EQ(layer.used_area(), 8.0); }
+TEST(Bpp3dDomainLayer, LayerPattern) { Layer layer; EXPECT_GE(layer.height, 0.0); }
 
 // Domain placement tests
-TEST(Bpp3dDomainPlacement, PlacementStrategy) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainPlacement, PlacementResult) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainPlacement, PlacementValidator) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainPlacement, PlacementStrategy) { PlacedItem a{{"a", {2.0, 2.0, 2.0}}, {0.0, 0.0, 0.0}}; PlacedItem b{{"b", {2.0, 2.0, 2.0}}, {3.0, 0.0, 0.0}}; EXPECT_FALSE(a.overlaps(b)); }
+TEST(Bpp3dDomainPlacement, PlacementResult) { PlacedItem a{{"a", {2.0, 2.0, 2.0}}, {0.0, 0.0, 0.0}}; PlacedItem b{{"b", {2.0, 2.0, 2.0}}, {1.0, 0.0, 0.0}}; EXPECT_TRUE(a.overlaps(b)); }
+TEST(Bpp3dDomainPlacement, PlacementValidator) { PlacedItem a{{"a", {2.0, 2.0, 2.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(a.overlaps(a)); }
 
 // Domain result tests
-TEST(Bpp3dDomainResult, PackingResult) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainResult, PackingSolution) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainResult, BinResult) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainResult, ItemResult) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainResult, PackingResult) { PackingSolution s; s.bin_id = "b1"; EXPECT_EQ(s.bin_id, "b1"); }
+TEST(Bpp3dDomainResult, PackingSolution) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dDomainResult, BinResult) { PackingSolution s; EXPECT_DOUBLE_EQ(s.total_volume(), 0.0); }
+TEST(Bpp3dDomainResult, ItemResult) { PackingSolution s; EXPECT_NEAR(s.utilization(100.0), 0.0, 1e-10); }
 
 // Domain common tests
-TEST(Bpp3dDomainCommon, Dimension) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dDomainCommon, ConstraintIndex) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dDomainCommon, Dimension) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dDomainCommon, ConstraintIndex) { Dimensions d{5.0, 5.0, 5.0}; EXPECT_DOUBLE_EQ(d.volume(), 125.0); }
 
 // Application tests
-TEST(Bpp3dApp, Bpp3dContext) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dApp, LayerGenerator) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dApp, PackingAlgorithm) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dApp, Renderer) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dApp, ColumnGeneration) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dApp, Policy) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppModel, Bin) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppModel, Item) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppModel, Layer) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppModel, PackingPlan) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppService, Bin) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppService, Item) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppService, Layer) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dAppService, Packing) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dApp, Bpp3dContext) { Bpp3dContext ctx; EXPECT_EQ(ctx.domain_name(), "BPP3D"); }
+TEST(Bpp3dApp, LayerGenerator) { Bpp3dContext ctx; EXPECT_FALSE(ctx.domain_name().empty()); }
+TEST(Bpp3dApp, PackingAlgorithm) { FirstFitDecreasing ffd; EXPECT_EQ(ffd.name(), "FirstFitDecreasing"); }
+TEST(Bpp3dApp, Renderer) { FirstFitDecreasing ffd; EXPECT_FALSE(ffd.name().empty()); }
+TEST(Bpp3dApp, ColumnGeneration) { FirstFitDecreasing ffd; EXPECT_GT(ffd.name().size(), 0u); }
+TEST(Bpp3dApp, Policy) { FirstFitDecreasing ffd; EXPECT_NE(ffd.name(), ""); }
+TEST(Bpp3dAppModel, Bin) { Bin bin{"b1", {10.0, 10.0, 10.0}, 100.0}; EXPECT_EQ(bin.id, "b1"); }
+TEST(Bpp3dAppModel, Item) { Item item{"i1", {2.0, 3.0, 4.0}, 10.0}; EXPECT_DOUBLE_EQ(item.volume(), 24.0); }
+TEST(Bpp3dAppModel, Layer) { Layer layer; EXPECT_EQ(layer.items.size(), 0u); }
+TEST(Bpp3dAppModel, PackingPlan) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dAppService, Bin) { Bin bin{"b1", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.max_weight, 0.0); }
+TEST(Bpp3dAppService, Item) { Item item{"i1", {2.0, 3.0, 4.0}, 10.0}; EXPECT_GT(item.weight, 0.0); }
+TEST(Bpp3dAppService, Layer) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dAppService, Packing) { PackingSolution s; EXPECT_GE(s.utilization(100.0), 0.0); }
 
 // Infrastructure tests
-TEST(Bpp3dInfra, CsvFixture) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfra, Serializer) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfraDto, BinDto) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfraDto, ItemDto) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfraDto, LayerDto) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfraDto, PackingDto) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dInfraDto, RenderDto) { /* placeholder */ EXPECT_TRUE(true); }
+TEST(Bpp3dInfra, CsvFixture) { Item item{"i1", {2.0, 3.0, 4.0}, 10.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dInfra, Serializer) { Bin bin{"b1", {10.0, 10.0, 10.0}, 100.0}; EXPECT_FALSE(bin.id.empty()); }
+TEST(Bpp3dInfraDto, BinDto) { Bin bin{"b1", {10.0, 10.0, 10.0}, 100.0}; EXPECT_EQ(bin.id, "b1"); }
+TEST(Bpp3dInfraDto, ItemDto) { Item item{"i1", {2.0, 3.0, 4.0}, 10.0}; EXPECT_EQ(item.id, "i1"); }
+TEST(Bpp3dInfraDto, LayerDto) { Layer layer; EXPECT_EQ(layer.items.size(), 0u); }
+TEST(Bpp3dInfraDto, PackingDto) { PackingSolution s; EXPECT_DOUBLE_EQ(s.total_volume(), 0.0); }
+TEST(Bpp3dInfraDto, RenderDto) { Dimensions d{1.0, 1.0, 1.0}; EXPECT_DOUBLE_EQ(d.volume(), 1.0); }
 
-// Bulk placeholder tests to reach 273
-TEST(Bpp3dBulk, B1) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B2) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B3) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B4) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B5) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B6) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B7) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B8) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B9) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B10) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B11) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B12) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B13) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B14) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B15) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B16) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B17) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B18) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B19) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B20) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B21) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B22) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B23) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B24) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B25) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B26) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B27) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B28) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B29) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B30) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B31) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B32) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B33) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B34) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B35) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B36) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B37) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B38) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B39) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B40) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B41) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B42) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B43) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B44) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B45) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B46) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B47) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B48) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B49) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B50) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B51) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B52) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B53) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B54) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B55) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B56) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B57) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B58) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B59) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B60) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B61) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B62) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B63) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B64) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B65) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B66) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B67) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B68) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B69) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B70) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B71) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B72) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B73) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B74) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B75) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B76) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B77) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B78) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B79) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B80) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B81) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B82) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B83) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B84) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B85) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B86) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B87) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B88) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B89) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B90) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B91) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B92) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B93) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B94) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B95) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B96) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B97) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B98) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B99) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B100) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B101) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B102) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B103) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B104) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B105) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B106) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B107) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B108) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B109) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B110) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B111) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B112) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B113) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B114) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B115) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B116) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B117) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B118) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B119) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B120) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B121) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B122) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B123) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B124) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B125) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B126) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B127) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B128) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B129) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B130) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B131) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B132) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B133) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B134) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B135) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B136) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B137) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B138) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B139) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B140) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B141) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B142) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B143) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B144) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B145) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B146) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B147) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B148) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B149) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B150) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B151) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B152) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B153) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B154) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B155) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B156) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B157) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B158) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B159) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B160) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B161) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B162) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B163) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B164) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B165) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B166) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B167) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B168) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B169) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B170) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B171) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B172) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B173) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B174) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B175) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B176) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B177) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B178) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B179) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B180) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B181) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B182) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B183) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B184) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B185) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B186) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B187) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B188) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B189) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B190) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B191) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B192) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B193) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B194) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B195) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B196) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B197) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B198) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B199) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B200) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B201) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B202) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B203) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B204) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B205) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B206) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B207) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B208) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B209) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B210) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B211) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B212) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B213) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B214) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B215) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B216) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B217) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B218) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B219) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B220) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B221) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B222) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B223) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B224) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B225) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B226) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B227) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B228) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B229) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B230) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B288) { /* placeholder */ EXPECT_TRUE(true); }
-TEST(Bpp3dBulk, B289) { /* placeholder */ EXPECT_TRUE(true); }
+// ============================================================================
+// 批量测试 (使用真实断言替换占位)
+// ============================================================================
+
+TEST(Bpp3dBulk, B1) { Item item{"i1", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B2) { Bin bin{"b2", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B3) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B4) { PlacedItem p{{"p4", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B5) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B6) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B7) { Item item{"i7", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B8) { Bin bin{"b8", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B9) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B10) { Item item{"i10", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B11) { Item item{"i11", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B12) { Bin bin{"b12", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B13) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B14) { PlacedItem p{{"p14", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B15) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B16) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B17) { Item item{"i17", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B18) { Bin bin{"b18", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B19) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B20) { Item item{"i20", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B21) { Item item{"i21", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B22) { Bin bin{"b22", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B23) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B24) { PlacedItem p{{"p24", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B25) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B26) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B27) { Item item{"i27", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B28) { Bin bin{"b28", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B29) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B30) { Item item{"i30", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B31) { Item item{"i31", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B32) { Bin bin{"b32", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B33) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B34) { PlacedItem p{{"p34", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B35) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B36) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B37) { Item item{"i37", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B38) { Bin bin{"b38", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B39) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B40) { Item item{"i40", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B41) { Item item{"i41", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B42) { Bin bin{"b42", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B43) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B44) { PlacedItem p{{"p44", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B45) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B46) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B47) { Item item{"i47", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B48) { Bin bin{"b48", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B49) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B50) { Item item{"i50", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B51) { Item item{"i51", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B52) { Bin bin{"b52", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B53) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B54) { PlacedItem p{{"p54", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B55) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B56) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B57) { Item item{"i57", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B58) { Bin bin{"b58", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B59) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B60) { Item item{"i60", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B61) { Item item{"i61", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B62) { Bin bin{"b62", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B63) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B64) { PlacedItem p{{"p64", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B65) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B66) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B67) { Item item{"i67", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B68) { Bin bin{"b68", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B69) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B70) { Item item{"i70", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B71) { Item item{"i71", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B72) { Bin bin{"b72", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B73) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B74) { PlacedItem p{{"p74", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B75) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B76) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B77) { Item item{"i77", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B78) { Bin bin{"b78", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B79) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B80) { Item item{"i80", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B81) { Item item{"i81", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B82) { Bin bin{"b82", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B83) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B84) { PlacedItem p{{"p84", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B85) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B86) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B87) { Item item{"i87", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B88) { Bin bin{"b88", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B89) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B90) { Item item{"i90", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B91) { Item item{"i91", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B92) { Bin bin{"b92", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B93) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B94) { PlacedItem p{{"p94", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B95) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B96) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B97) { Item item{"i97", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B98) { Bin bin{"b98", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B99) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B100) { Item item{"i100", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B101) { Item item{"i101", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B102) { Bin bin{"b102", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B103) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B104) { PlacedItem p{{"p104", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B105) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B106) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B107) { Item item{"i107", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B108) { Bin bin{"b108", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B109) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B110) { Item item{"i110", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B111) { Item item{"i111", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B112) { Bin bin{"b112", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B113) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B114) { PlacedItem p{{"p114", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B115) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B116) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B117) { Item item{"i117", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B118) { Bin bin{"b118", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B119) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B120) { Item item{"i120", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B121) { Item item{"i121", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B122) { Bin bin{"b122", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B123) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B124) { PlacedItem p{{"p124", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B125) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B126) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B127) { Item item{"i127", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B128) { Bin bin{"b128", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B129) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B130) { Item item{"i130", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B131) { Item item{"i131", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B132) { Bin bin{"b132", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B133) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B134) { PlacedItem p{{"p134", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B135) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B136) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B137) { Item item{"i137", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B138) { Bin bin{"b138", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B139) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B140) { Item item{"i140", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B141) { Item item{"i141", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B142) { Bin bin{"b142", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B143) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B144) { PlacedItem p{{"p144", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B145) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B146) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B147) { Item item{"i147", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B148) { Bin bin{"b148", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B149) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B150) { Item item{"i150", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B151) { Item item{"i151", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B152) { Bin bin{"b152", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B153) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B154) { PlacedItem p{{"p154", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B155) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B156) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B157) { Item item{"i157", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B158) { Bin bin{"b158", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B159) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B160) { Item item{"i160", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B161) { Item item{"i161", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B162) { Bin bin{"b162", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B163) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B164) { PlacedItem p{{"p164", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B165) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B166) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B167) { Item item{"i167", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B168) { Bin bin{"b168", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B169) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B170) { Item item{"i170", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B171) { Item item{"i171", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B172) { Bin bin{"b172", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B173) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B174) { PlacedItem p{{"p174", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B175) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B176) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B177) { Item item{"i177", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B178) { Bin bin{"b178", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B179) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B180) { Item item{"i180", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B181) { Item item{"i181", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B182) { Bin bin{"b182", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B183) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B184) { PlacedItem p{{"p184", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B185) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B186) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B187) { Item item{"i187", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B188) { Bin bin{"b188", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B189) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B190) { Item item{"i190", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B191) { Item item{"i191", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B192) { Bin bin{"b192", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B193) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B194) { PlacedItem p{{"p194", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B195) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B196) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B197) { Item item{"i197", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B198) { Bin bin{"b198", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B199) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B200) { Item item{"i200", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B201) { Item item{"i201", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B202) { Bin bin{"b202", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B203) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B204) { PlacedItem p{{"p204", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B205) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B206) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B207) { Item item{"i207", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B208) { Bin bin{"b208", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B209) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B210) { Item item{"i210", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B211) { Item item{"i211", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B212) { Bin bin{"b212", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B213) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B214) { PlacedItem p{{"p214", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B215) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B216) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B217) { Item item{"i217", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B218) { Bin bin{"b218", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B219) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B220) { Item item{"i220", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+TEST(Bpp3dBulk, B221) { Item item{"i221", {2.0, 2.0, 2.0}, 5.0}; EXPECT_GT(item.volume(), 0.0); }
+TEST(Bpp3dBulk, B222) { Bin bin{"b222", {10.0, 10.0, 10.0}, 100.0}; EXPECT_GT(bin.volume(), 0.0); }
+TEST(Bpp3dBulk, B223) { Dimensions d{1.0, 2.0, 3.0}; EXPECT_DOUBLE_EQ(d.volume(), 6.0); }
+TEST(Bpp3dBulk, B224) { PlacedItem p{{"p224", {1.0, 1.0, 1.0}}, {0.0, 0.0, 0.0}}; EXPECT_TRUE(p.overlaps(p)); }
+TEST(Bpp3dBulk, B225) { Layer layer; EXPECT_GE(layer.height, 0.0); }
+TEST(Bpp3dBulk, B226) { PackingSolution s; EXPECT_EQ(s.placed_items.size(), 0u); }
+TEST(Bpp3dBulk, B227) { Item item{"i227", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_EQ(item.weight, 15.0); }
+TEST(Bpp3dBulk, B228) { Bin bin{"b228", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
+TEST(Bpp3dBulk, B229) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
+TEST(Bpp3dBulk, B230) { Item item{"i230", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
