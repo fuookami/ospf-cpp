@@ -386,7 +386,8 @@ TEST(GurobiSolver, LicenseCheck) {
         GRBEnv env = GRBEnv(true);
         env.start();
         // 如果 license 不可用，会抛出异常
-        EXPECT_TRUE(true);
+        GRBModel model = GRBModel(env);
+        EXPECT_TRUE(model.get(GRB_IntAttr_NumVars) >= 0);
     } catch (const GRBException& e) {
         // License 不可用时记录但不失败
         GTEST_SKIP() << "Gurobi license not available: " << e.getMessage();
