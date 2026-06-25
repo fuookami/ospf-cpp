@@ -38,6 +38,7 @@ add_executable(ospf_core_tests
     tests/test_core.cpp
     tests/test_solver.cpp
     tests/test_symbol_functions.cpp
+    tests/test_gurobi_integration.cpp
 )
 target_link_libraries(ospf_core_tests PRIVATE ospf_core GTest::gtest GTest::gtest_main)
 if(OSPF_ENABLE_GUROBI AND GUROBI_BIN_DIR)

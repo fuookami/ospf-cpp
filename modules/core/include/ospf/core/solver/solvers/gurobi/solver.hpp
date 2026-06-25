@@ -8,8 +8,7 @@
 #ifdef OSPF_ENABLE_GUROBI
 
 #include <ospf/core/solver/solvers/gurobi/config.hpp>
-#include <ospf/core/solver/solve_result.hpp>
-#include <ospf/core/model/meta_model.hpp>
+#include <ospf/core/solver.hpp>
 
 #include "gurobi_c++.h"
 
@@ -21,6 +20,9 @@
 #include <sstream>
 
 namespace ospf::core {
+
+    // 前向声明 / Forward declaration
+    class MetaModel;
 
     /// Gurobi 求解器 / Gurobi Solver
     ///
