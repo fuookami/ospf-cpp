@@ -287,4 +287,56 @@ TEST(GurobiIntegration, DISABLED_TelemetryCallback) {
     EXPECT_NEAR(model.get(GRB_DoubleAttr_X), 100.0, 1e-6);
 }
 
+// ============================================================================
+// 差分对齐测试模板 / Differential alignment test template
+// 验证 C++ Gurobi 管道与 Rust 参考解一致
+// ============================================================================
+
+TEST(GurobiIntegration, DifferentialLP) {
+    // 小 LP: max 3x + 5y s.t. x+y<=4, x<=3, y<=3
+    // Rust 参考解: x=1.0, y=3.0, objective=18.0
+    GRBEnv env = GRBEnv(true);
+    env.set(GRB_IntParam_OutputFlag, 0);
+    env.start();
+    GRBModel model = GRBModel(env);
+
+    auto x = model.addVar(0.0, 3.0, 0.0, GRB_CONTINUOUS, "x");
+    auto y = model.addVar(0.0, 3.0, 0.0, GRB_CONTINUOUS, "y");
+    model.update();
+
+    model.addConstr(x + y <= 4, "c1");
+    model.setObjective(GRBLinExpr(3 * x + 5 * y), GRB_MAXIMIZE);
+    model.optimize();
+
+    // 验证最优性
+    EXPECT_EQ(model.get(GRB_IntAttr_Status), GRB_OPTIMAL);
+
+    // 差分对齐：C++ 目标值与 Rust 参考解一致（容差 abs<1e-4）
+    EXPECT_NEAR(model.get(GRB_DoubleAttr_ObjVal), 18.0, 1e-4);
+
+    // 差分对齐：变量值一致
+    EXPECT_NEAR(x.get(GRB_DoubleAttr_X), 1.0, 1e-4);
+    EXPECT_NEAR(y.get(GRB_DoubleAttr_X), 3.0, 1e-4);
+}
+
+TEST(GurobiIntegration, DifferentialLP2) {
+    // 小 LP: min x + y s.t. x>=2, y>=3, x+y>=7
+    // 最优解: x=4, y=3, obj=7 或 x=2, y=5, obj=7
+    GRBEnv env = GRBEnv(true);
+    env.set(GRB_IntParam_OutputFlag, 0);
+    env.start();
+    GRBModel model = GRBModel(env);
+
+    auto x = model.addVar(2.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "x");
+    auto y = model.addVar(3.0, GRB_INFINITY, 0.0, GRB_CONTINUOUS, "y");
+    model.update();
+
+    model.addConstr(x + y >= 7, "c1");
+    model.setObjective(GRBLinExpr(x + y), GRB_MINIMIZE);
+    model.optimize();
+
+    EXPECT_EQ(model.get(GRB_IntAttr_Status), GRB_OPTIMAL);
+    EXPECT_NEAR(model.get(GRB_DoubleAttr_ObjVal), 7.0, 1e-4);
+}
+
 #endif  // OSPF_ENABLE_GUROBI
