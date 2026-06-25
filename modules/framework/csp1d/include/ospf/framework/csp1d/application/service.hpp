@@ -90,15 +90,35 @@ namespace ospf::framework::csp1d {
     public:
         virtual ~Csp1dPricingGenerator() = default;
 
+        /// 生成器名称 / Generator name
+        [[nodiscard]] virtual const std::string& name() const = 0;
+
         /// 生成定价方案 / Generate pricing plans
         /// 对应 Rust Csp1dPricingGenerator::generate
         [[nodiscard]] virtual std::vector<CuttingPlan> generate() const = 0;
+
+        /// 带上下文生成定价方案 / Generate with context
+        /// 对应 Rust Csp1dPricingGenerator::generate_with_context
+        [[nodiscard]] virtual std::vector<CuttingPlan> generate_with_context(
+            const Csp1dFlowContext& context) const
+        {
+            return generate();
+        }
     };
 
     // ============================================================================
     // 列生成结果 / Column generation result
     // 对应 Rust Csp1dColumnGenerationResult<V>
     // ============================================================================
+
+    /// 迭代记录 / Iteration record
+    struct Csp1dIterationRecord {
+        int iteration = 0;
+        int plans_before = 0;
+        int plans_generated = 0;
+        int plans_accepted = 0;
+        std::string action;  // "initial_filter" / "pricing" / "warm_start" / "recovery"
+    };
 
     /// 列生成结果 / Column generation result
     struct Csp1dColumnGenerationResult {
@@ -110,12 +130,43 @@ namespace ospf::framework::csp1d {
 
         /// 终止原因 / Termination reason
         std::string termination_reason;
+
+        /// 迭代记录 / Iteration records
+        std::vector<Csp1dIterationRecord> iteration_records;
+
+        /// 是否使用了 warm start / Whether warm start was used
+        bool used_warm_start = false;
+
+        /// 是否使用了 recovery / Whether recovery was used
+        bool used_recovery = false;
     };
 
     // ============================================================================
     // 列生成服务 / Column generation service
     // 对应 Rust Csp1dColumnGeneration<V>
     // ============================================================================
+
+    /// Warm start 适配器 / Warm start adapter
+    class Csp1dWarmStartAdapter {
+    public:
+        virtual ~Csp1dWarmStartAdapter() = default;
+
+        /// 是否有 warm start 数据 / Has warm start data
+        [[nodiscard]] virtual bool has_warm_start() const { return false; }
+
+        /// 获取 warm start 方案 / Get warm start plans
+        [[nodiscard]] virtual std::vector<CuttingPlan> get_warm_start_plans() const { return {}; }
+    };
+
+    /// Recovery 适配器 / Recovery adapter
+    class Csp1dRecoveryAdapter {
+    public:
+        virtual ~Csp1dRecoveryAdapter() = default;
+
+        /// 尝试恢复 / Attempt recovery
+        [[nodiscard]] virtual std::vector<CuttingPlan> recover(
+            const Csp1dFlowContext& context) const { return {}; }
+    };
 
     /// 列生成服务 / Column generation service
     /// 对应 Rust Csp1dColumnGeneration<V>
@@ -127,10 +178,14 @@ namespace ospf::framework::csp1d {
         Csp1dColumnGeneration(
             std::shared_ptr<Csp1dInitialCuttingPlanGenerator> initial_generator,
             std::shared_ptr<Csp1dPricingGenerator> pricing_generator,
-            std::vector<std::shared_ptr<Csp1dFlowPolicy>> flow_policies = {})
+            std::vector<std::shared_ptr<Csp1dFlowPolicy>> flow_policies = {},
+            std::shared_ptr<Csp1dWarmStartAdapter> warm_start = nullptr,
+            std::shared_ptr<Csp1dRecoveryAdapter> recovery = nullptr)
             : initial_generator_(std::move(initial_generator))
             , pricing_generator_(std::move(pricing_generator))
             , flow_policies_(std::move(flow_policies))
+            , warm_start_(std::move(warm_start))
+            , recovery_(std::move(recovery))
         {}
 
         /// 求解（返回方案列表） / Solve (return plans)
@@ -144,9 +199,11 @@ namespace ospf::framework::csp1d {
         /// 求解（带追踪） / Solve with trace
         /// 对应 Rust Csp1dColumnGeneration::solve_with_trace
         /// 核心列生成控制流：
-        /// 1. 生成初始方案
-        /// 2. 流程策略过滤初始方案
-        /// 3. 定价迭代（预留，probe 只验证 1-2）
+        /// 1. warm start 检查
+        /// 2. 生成初始方案
+        /// 3. 流程策略过滤初始方案
+        /// 4. 定价迭代（pricing + 过滤 + 合并）
+        /// 5. recovery（如果迭代无进展）
         [[nodiscard]] Csp1dColumnGenerationResult solve_with_trace(
             int iteration_limit = 10) const
         {
@@ -155,40 +212,106 @@ namespace ospf::framework::csp1d {
             context.iteration_limit = iteration_limit;
             context.allow_partial_solution = true;
 
-            // 1. 生成初始方案 / Generate initial plans
+            Csp1dColumnGenerationResult result;
+            std::vector<Csp1dIterationRecord> records;
+
+            // 1. Warm start 检查 / Warm start check
+            if (warm_start_ && warm_start_->has_warm_start()) {
+                auto warm_plans = warm_start_->get_warm_start_plans();
+                if (!warm_plans.empty()) {
+                    Csp1dIterationRecord rec;
+                    rec.iteration = 0;
+                    rec.plans_before = 0;
+                    rec.plans_generated = static_cast<int>(warm_plans.size());
+                    rec.plans_accepted = static_cast<int>(warm_plans.size());
+                    rec.action = "warm_start";
+                    records.push_back(rec);
+                    context.current_plans = std::move(warm_plans);
+                    result.used_warm_start = true;
+                }
+            }
+
+            // 2. 生成初始方案 / Generate initial plans
             auto initial_plans = initial_generator_->generate();
 
-            // 2. 流程策略过滤初始方案 / Apply flow policy filters
+            // 3. 流程策略过滤 / Apply flow policy filters
+            int plans_before_filter = static_cast<int>(initial_plans.size());
             for (const auto& policy : flow_policies_) {
                 initial_plans = policy->filter_initial_plans(context, std::move(initial_plans));
             }
 
-            context.current_plans = initial_plans;
+            {
+                Csp1dIterationRecord rec;
+                rec.iteration = 0;
+                rec.plans_before = static_cast<int>(context.current_plans.size());
+                rec.plans_generated = plans_before_filter;
+                rec.plans_accepted = static_cast<int>(initial_plans.size());
+                rec.action = "initial_filter";
+                records.push_back(rec);
+            }
 
-            // 3. 定价迭代（probe 阶段：pricing generator 返回空，直接结束）
-            // Pricing iteration (probe: pricing returns empty, terminate)
+            for (auto& plan : initial_plans) {
+                context.current_plans.push_back(std::move(plan));
+            }
+
+            // 4. 定价迭代 / Pricing iteration
             int iteration = 0;
+            int consecutive_empty = 0;
             while (iteration < iteration_limit) {
-                auto new_plans = pricing_generator_->generate();
+                context.iteration = iteration + 1;
+                auto new_plans = pricing_generator_->generate_with_context(context);
+
                 if (new_plans.empty()) {
-                    break;  // pricing 无新方案，收敛 / No new plans, converged
+                    ++consecutive_empty;
+                    // 5. Recovery / Recovery attempt
+                    if (recovery_ && consecutive_empty >= 2) {
+                        auto recovered = recovery_->recover(context);
+                        if (!recovered.empty()) {
+                            Csp1dIterationRecord rec;
+                            rec.iteration = iteration + 1;
+                            rec.plans_before = static_cast<int>(context.current_plans.size());
+                            rec.plans_generated = static_cast<int>(recovered.size());
+                            rec.plans_accepted = static_cast<int>(recovered.size());
+                            rec.action = "recovery";
+                            records.push_back(rec);
+                            for (auto& plan : recovered) {
+                                context.current_plans.push_back(std::move(plan));
+                            }
+                            result.used_recovery = true;
+                            consecutive_empty = 0;
+                            ++iteration;
+                            continue;
+                        }
+                    }
+                    break;
                 }
 
-                // 过滤新方案 / Filter new plans through flow policies
+                consecutive_empty = 0;
+                int plans_before = static_cast<int>(new_plans.size());
+
                 for (const auto& policy : flow_policies_) {
                     new_plans = policy->filter_initial_plans(context, std::move(new_plans));
                 }
 
-                // 合并 / Merge
+                {
+                    Csp1dIterationRecord rec;
+                    rec.iteration = iteration + 1;
+                    rec.plans_before = static_cast<int>(context.current_plans.size());
+                    rec.plans_generated = plans_before;
+                    rec.plans_accepted = static_cast<int>(new_plans.size());
+                    rec.action = "pricing";
+                    records.push_back(rec);
+                }
+
                 for (auto& plan : new_plans) {
                     context.current_plans.push_back(std::move(plan));
                 }
                 ++iteration;
             }
 
-            Csp1dColumnGenerationResult result;
             result.generated_plans = context.current_plans;
             result.iteration_count = iteration;
+            result.iteration_records = std::move(records);
             result.termination_reason = (iteration >= iteration_limit)
                 ? "IterationLimitReached" : "PricingConverged";
 
@@ -199,6 +322,8 @@ namespace ospf::framework::csp1d {
         std::shared_ptr<Csp1dInitialCuttingPlanGenerator> initial_generator_;
         std::shared_ptr<Csp1dPricingGenerator> pricing_generator_;
         std::vector<std::shared_ptr<Csp1dFlowPolicy>> flow_policies_;
+        std::shared_ptr<Csp1dWarmStartAdapter> warm_start_;
+        std::shared_ptr<Csp1dRecoveryAdapter> recovery_;
     };
 
     // ============================================================================
@@ -233,6 +358,11 @@ namespace ospf::framework::csp1d {
     /// 对应 Rust 测试中的 EmptyPricingGenerator
     class EmptyPricingGenerator : public Csp1dPricingGenerator {
     public:
+        [[nodiscard]] const std::string& name() const override {
+            static const std::string name_ = "EmptyPricingGenerator";
+            return name_;
+        }
+
         [[nodiscard]] std::vector<CuttingPlan> generate() const override {
             return {};
         }
