@@ -494,3 +494,118 @@ TEST(Bpp3dBulk, B227) { Item item{"i227", {3.0, 3.0, 3.0}, 15.0}; EXPECT_DOUBLE_
 TEST(Bpp3dBulk, B228) { Bin bin{"b228", {5.0, 5.0, 5.0}, 50.0}; EXPECT_DOUBLE_EQ(bin.max_weight, 50.0); }
 TEST(Bpp3dBulk, B229) { Dimensions d{2.0, 3.0, 4.0}; EXPECT_DOUBLE_EQ(d.volume(), 24.0); }
 TEST(Bpp3dBulk, B230) { Item item{"i230", {1.0, 1.0, 1.0}, 1.0}; EXPECT_FALSE(item.id.empty()); }
+
+// ============================================================================
+// 列生成探针测试 / Column generation probe tests
+// 对齐 Rust bpp3d service/tests/algorithm.rs:
+//   column_generation_algorithm_adds_mock_layer
+//   column_generation_algorithm_filters_removed_columns_from_state
+// ============================================================================
+
+#include <ospf/framework/bpp3d/application/algorithm/column_generation.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+/// Mock 层生成器 / Mock layer generator
+/// 对应 Rust 测试中的 MockGenerator
+class MockLayerGenerator : public IColumnLayerGenerator {
+public:
+    [[nodiscard]] const std::string& name() const override {
+        static const std::string n = "mock";
+        return n;
+    }
+
+    [[nodiscard]] std::vector<LayerGenerationResult> generate(
+        const LayerGenerationRequest& request) const override
+    {
+        BinLayer layer;
+        layer.iteration = request.iteration;
+        layer.from = name();
+        layer.depth = 1.0;
+
+        LayerGenerationResult result;
+        result.layer = layer;
+        result.reduced_cost = -1.0;
+        result.numeric_score = 1.0;
+        result.source = name();
+        return {result};
+    }
+};
+
+// ============================================================================
+// 差分对齐测试 1: 列生成算法添加 mock 层
+// 对齐 Rust: column_generation_algorithm_adds_mock_layer
+// 参考行为：generate_once 后，results.len()==1, active_column_count==1, iteration==1
+// ============================================================================
+
+TEST(Bpp3dColumnGeneration, AddsMockLayer) {
+    ColumnGenerationConfig config;
+    config.max_candidates_per_iteration = 8;
+
+    ColumnGenerationAlgorithm algorithm(config);
+    algorithm.add_generator(std::make_shared<MockLayerGenerator>());
+
+    auto results = algorithm.generate_once({"i0"}, {});
+
+    // 差分对齐断言（与 Rust 参考一致）
+    EXPECT_EQ(results.size(), 1u);
+    EXPECT_EQ(algorithm.active_column_count(), 1u);
+    EXPECT_EQ(algorithm.active_layers().size(), 1u);
+
+    auto result = algorithm.result();
+    EXPECT_EQ(result.info.at("framework_lifecycle_active_column_count"), "1");
+    EXPECT_EQ(result.info.at("framework_lifecycle_removed_column_count"), "0");
+}
+
+// ============================================================================
+// 差分对齐测试 2: 列生成算法过滤已移除列
+// 对齐 Rust: column_generation_algorithm_filters_removed_columns_from_state
+// 参考行为：add_initial_layers([seed-a, seed-b]) → remove_columns([0]) → active_layers()==[seed-b]
+// ============================================================================
+
+TEST(Bpp3dColumnGeneration, FiltersRemovedColumns) {
+    BinLayer first;
+    first.iteration = 0;
+    first.from = "seed-a";
+    first.depth = 1.0;
+
+    BinLayer second;
+    second.iteration = 0;
+    second.from = "seed-b";
+    second.depth = 2.0;
+
+    ColumnGenerationAlgorithm algorithm(ColumnGenerationConfig{});
+    algorithm.add_initial_layers({first, second});
+    algorithm.remove_columns({0});
+
+    auto active = algorithm.active_layers();
+
+    // 差分对齐断言（与 Rust 参考一致）
+    EXPECT_EQ(active.size(), 1u);
+    EXPECT_EQ(active[0].from, "seed-b");
+    EXPECT_EQ(algorithm.active_column_count(), 1u);
+    EXPECT_EQ(algorithm.removed_column_count(), 1u);
+}
+
+// ============================================================================
+// 差分对齐测试 3: 列生成迭代推进
+// 验证 generate_once 推进 iteration + should_continue 控制
+// ============================================================================
+
+TEST(Bpp3dColumnGeneration, IterationAdvances) {
+    ColumnGenerationConfig config;
+    config.iteration_limit = 2;
+
+    ColumnGenerationAlgorithm algorithm(config);
+    algorithm.add_generator(std::make_shared<MockLayerGenerator>());
+
+    EXPECT_TRUE(algorithm.should_continue());  // 未开始，should_continue 取决于状态
+
+    algorithm.generate_once({"i0"}, {});
+    // 第 1 次迭代后：iteration==1, active_column_count==1
+    EXPECT_EQ(algorithm.active_column_count(), 1u);
+
+    algorithm.generate_once({"i1"}, {});
+    // 第 2 次迭代后：iteration==2, active_column_count==2
+    EXPECT_EQ(algorithm.active_column_count(), 2u);
+}
