@@ -191,3 +191,171 @@ TEST(Integration, Csp1dWorkflow) {
     auto waste = calculate_waste(plan, ctx.stocks());
     EXPECT_GE(waste, 0.0);
 }
+
+// ============================================================================
+// 列生成探针测试 / Column generation probe tests
+// 对齐 Rust csp1d_migration.rs: column_generation_applies_initial_plan_flow_policy_filter
+// ============================================================================
+
+#include <ospf/framework/csp1d/application/service.hpp>
+
+using namespace ospf::framework::csp1d;
+
+/// 过滤流程策略 / Filtering flow policy
+/// 对应 Rust 测试中的 FilteringFlowPolicy
+/// 过滤掉指定 ID 的方案
+class FilteringFlowPolicy : public Csp1dFlowPolicy {
+public:
+    explicit FilteringFlowPolicy(std::string rejected_plan_id)
+        : rejected_plan_id_(std::move(rejected_plan_id)) {}
+
+    [[nodiscard]] const std::string& name() const override {
+        static const std::string n = "filtering_flow_policy";
+        return n;
+    }
+
+    /// 过滤初始方案：移除 id == rejected_plan_id_ 的方案
+    /// 对应 Rust FilteringFlowPolicy::filter_initial_plans
+    [[nodiscard]] std::vector<CuttingPlan> filter_initial_plans(
+        const Csp1dFlowContext& /*context*/,
+        std::vector<CuttingPlan> plans) const override
+    {
+        std::vector<CuttingPlan> result;
+        for (auto& plan : plans) {
+            if (plan.id != rejected_plan_id_) {
+                result.push_back(std::move(plan));
+            }
+        }
+        return result;
+    }
+
+    /// 材料 ID 相同即等价 / Same material ID = equivalent
+    /// 对应 Rust FilteringFlowPolicy::is_equivalent
+    [[nodiscard]] bool is_equivalent(
+        const Csp1dFlowContext& /*context*/,
+        const CuttingPlan& existing,
+        const CuttingPlan& candidate) const override
+    {
+        return existing.material_id == candidate.material_id;
+    }
+
+    /// 不接受部分方案 / Don't accept partial
+    /// 对应 Rust FilteringFlowPolicy::accept_partial
+    [[nodiscard]] bool accept_partial(
+        const Csp1dFlowContext& /*context*/) const override
+    {
+        return false;
+    }
+
+private:
+    std::string rejected_plan_id_;
+};
+
+// ============================================================================
+// 差分对齐测试 / Differential alignment test
+// 对齐 Rust: column_generation_applies_initial_plan_flow_policy_filter
+// 参考 Rust 输出：kept("keep-me") 保留，dropped("drop-me") 被过滤
+// ============================================================================
+
+TEST(ColumnGeneration, FlowPolicyFiltersInitialPlans) {
+    // 构造两个切割方案 / Create two cutting plans
+    CuttingPlan kept;
+    kept.id = "keep-me";
+    kept.material_id = "m1";
+    kept.slices = {{"p1", 30.0, 2}};
+
+    CuttingPlan dropped;
+    dropped.id = "drop-me";
+    dropped.material_id = "m1";
+    dropped.slices = {{"p1", 20.0, 2}};
+
+    // 创建过滤策略：拒绝 "drop-me" / Create filter policy: reject "drop-me"
+    auto policy = std::make_shared<FilteringFlowPolicy>("drop-me");
+
+    // 创建固定方案枚举器 + 空定价生成器 / Fixed enumerator + empty pricing
+    auto enumerator = std::make_shared<FixedPlanEnumerator>(
+        std::vector<CuttingPlan>{kept, dropped});
+    auto pricing = std::make_shared<EmptyPricingGenerator>();
+
+    // 创建列生成服务 / Create column generation service
+    Csp1dColumnGeneration service(
+        enumerator,
+        pricing,
+        std::vector<std::shared_ptr<Csp1dFlowPolicy>>{policy});
+
+    // 执行 / Execute
+    auto result = service.solve();
+
+    // 差分对齐断言（与 Rust 参考一致）/ Differential alignment assertions
+    // Rust 断言：result.solution.generated_plans 包含 kept，不包含 dropped
+    bool has_kept = false;
+    bool has_dropped = false;
+    for (const auto& plan : result.generated_plans) {
+        if (plan.id == "keep-me") has_kept = true;
+        if (plan.id == "drop-me") has_dropped = true;
+    }
+
+    EXPECT_TRUE(has_kept) << "kept plan 'keep-me' should be retained after flow policy filter";
+    EXPECT_FALSE(has_dropped) << "dropped plan 'drop-me' should be filtered out by flow policy";
+
+    // 验证终止原因 / Verify termination reason
+    EXPECT_EQ(result.termination_reason, "PricingConverged");
+    EXPECT_EQ(result.iteration_count, 0);
+}
+
+// ============================================================================
+// 差分对齐测试：列生成初始流程策略接收上下文
+// 对齐 Rust: column_generation_initial_flow_policy_receives_kotlin_like_context
+// ============================================================================
+
+TEST(ColumnGeneration, FlowPolicyReceivesContext) {
+    // 验证 flow policy 能访问流程上下文 / Verify flow policy can access context
+    struct InspectingPolicy : public Csp1dFlowPolicy {
+        mutable bool observed = false;
+
+        [[nodiscard]] const std::string& name() const override {
+            static const std::string n = "inspecting";
+            return n;
+        }
+
+        [[nodiscard]] std::vector<CuttingPlan> filter_initial_plans(
+            const Csp1dFlowContext& context,
+            std::vector<CuttingPlan> plans) const override
+        {
+            // 验证上下文包含迭代信息 / Verify context has iteration info
+            observed = (context.iteration == 0);
+            return plans;
+        }
+
+        [[nodiscard]] bool is_equivalent(
+            const Csp1dFlowContext&, const CuttingPlan&, const CuttingPlan&) const override {
+            return false;
+        }
+
+        [[nodiscard]] bool accept_partial(const Csp1dFlowContext&) const override {
+            return true;
+        }
+    };
+
+    auto policy = std::make_shared<InspectingPolicy>();
+
+    CuttingPlan plan;
+    plan.id = "test-plan";
+    plan.material_id = "m1";
+    plan.slices = {{"p1", 30.0, 1}};
+
+    auto enumerator = std::make_shared<FixedPlanEnumerator>(
+        std::vector<CuttingPlan>{plan});
+    auto pricing = std::make_shared<EmptyPricingGenerator>();
+
+    Csp1dColumnGeneration service(
+        enumerator, pricing,
+        std::vector<std::shared_ptr<Csp1dFlowPolicy>>{policy});
+
+    auto result = service.solve();
+
+    // 验证 flow policy 观察到上下文 / Verify flow policy observed context
+    EXPECT_TRUE(policy->observed) << "flow policy should have received context with iteration=0";
+    EXPECT_EQ(result.generated_plans.size(), 1u);
+    EXPECT_EQ(result.generated_plans[0].id, "test-plan");
+}
