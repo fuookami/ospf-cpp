@@ -91,17 +91,62 @@ namespace ospf::core {
                 // 构建目标函数 / Build objective
                 if (model.objective().has_value()) {
                     const auto& obj = model.objective().value();
-                    // 简化：线性目标系数 / Simplified: linear objective coefficients
                     GRBLinExpr obj_expr;
-                    // TODO: 从 Expression 解析目标系数
-                    // For now, use a simple linear combination
+
+                    // 从 Expression 解析目标系数 / Parse objective coefficients from Expression
+                    for (const auto& term : obj.expression.terms()) {
+                        if (term.is_constant()) {
+                            obj_expr += term.coefficient();
+                        } else {
+                            for (const auto& [var, exp] : term.powers()) {
+                                auto it = grb_vars.find(var.name());
+                                if (it != grb_vars.end() && exp == 1.0) {
+                                    obj_expr += term.coefficient() * it->second;
+                                }
+                            }
+                        }
+                    }
+
                     grb_model.setObjective(obj_expr,
                         obj.sense == ObjectiveSense::Maximize ? GRB_MAXIMIZE : GRB_MINIMIZE);
                 }
 
                 // 构建约束 / Build constraints
-                // TODO: 从 Inequality 解析约束
-                // For now, add basic constraints from model
+                // 从 Inequality 解析约束 / Parse constraints from Inequality
+                for (const auto& constraint : model.constraints()) {
+                    const auto& ineq = constraint.inequality;
+
+                    // 解析左侧表达式 / Parse left-hand side expression
+                    GRBLinExpr lhs;
+                    for (const auto& term : ineq.lhs().terms()) {
+                        if (term.is_constant()) {
+                            lhs += term.coefficient();
+                        } else {
+                            for (const auto& [var, exp] : term.powers()) {
+                                auto it = grb_vars.find(var.name());
+                                if (it != grb_vars.end() && exp == 1.0) {
+                                    lhs += term.coefficient() * it->second;
+                                }
+                            }
+                        }
+                    }
+
+                    // 解析右侧常数 / Parse right-hand side constant
+                    double rhs = 0.0;
+                    for (const auto& term : ineq.rhs().terms()) {
+                        if (term.is_constant()) {
+                            rhs += term.coefficient();
+                        }
+                    }
+
+                    // 添加约束 / Add constraint
+                    using namespace ospf::math::symbol;
+                    if (ineq.op() == ComparisonOp::Less || ineq.op() == ComparisonOp::LessEqual) {
+                        grb_model.addConstr(lhs <= rhs, constraint.name);
+                    } else if (ineq.op() == ComparisonOp::Greater || ineq.op() == ComparisonOp::GreaterEqual) {
+                        grb_model.addConstr(lhs >= rhs, constraint.name);
+                    }
+                }
 
                 // 求解 / Solve
                 grb_model.optimize();
