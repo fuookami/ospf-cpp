@@ -686,3 +686,59 @@ TEST(GanttBulk, G147) { Bunch b{"b3", {}}; EXPECT_EQ(b.size(), 0u); }
 TEST(GanttBulk, G148) { Bunch b{"b4", {"t1", "t2", "t3"}}; EXPECT_EQ(b.id, "b4"); }
 TEST(GanttBulk, G149) { Bunch b{"b5", {"t1", "t2", "t3", "t4"}}; EXPECT_GE(b.size(), 3u); }
 TEST(GanttBulk, G150) { Bunch b{"b6", {"t1", "t2", "t3", "t4", "t5"}}; EXPECT_EQ(b.size(), 5u); }
+
+// ============================================================================
+// 分支定价探针测试 / Branch and price probe tests
+// 对齐 Rust gantt branch_and_price.rs:
+//   test_branch_node_child_keeps_decision_path
+//   test_tree_search_processes_multiple_nodes_and_updates_incumbent
+// ============================================================================
+
+#include <ospf/framework/gantt/application/algorithm/branch_and_price.hpp>
+
+TEST(GanttBranchAndPrice, ChildKeepsDecisionPath) {
+    auto root = BranchNode::root();
+    auto child = BranchNode::child(1, root, BranchDecision::one(3, BranchDirection::Left));
+    EXPECT_EQ(child.parent_id, std::optional<std::size_t>{0});
+    EXPECT_EQ(child.depth, 1u);
+    EXPECT_EQ(child.decisions.size(), 1u);
+    EXPECT_EQ(child.decisions[0].target_index, 3u);
+    EXPECT_EQ(child.decisions[0].value, 1);
+}
+
+TEST(GanttBranchAndPrice, TreeSearchUpdatesIncumbent) {
+    BranchSearchConfig config;
+    config.max_nodes = 10;
+    BranchAndPriceTreeSearch::NodeSolver solver = [](const BranchNode& node) -> std::optional<double> {
+        if (node.id % 2 == 0) return static_cast<double>(node.id);
+        return static_cast<double>(node.id * 2);
+    };
+    auto result = BranchAndPriceTreeSearch::search(config, solver);
+    EXPECT_GE(result.processed_nodes, 2u);
+    EXPECT_TRUE(result.incumbent.has_value());
+    EXPECT_TRUE(result.incumbent_objective.has_value());
+}
+
+TEST(GanttBranchAndPrice, TreeSearchTrace) {
+    BranchSearchConfig config;
+    config.max_nodes = 10;
+    BranchAndPriceTreeSearch::NodeSolver solver = [](const BranchNode& node) -> std::optional<double> {
+        if (node.id == 0) return 2.0;
+        if (node.id == 1) return std::nullopt;  // 不可行，剪枝
+        return 5.0;  // 其他节点可行但更差（5 > 2，不更新 incumbent）
+    };
+    std::vector<std::string> trace_events;
+    BranchAndPriceTreeSearch::NodeCallback callback = [&](const BranchNode&, const std::string& event) {
+        trace_events.push_back(event);
+    };
+    auto result = BranchAndPriceTreeSearch::search(config, solver, callback);
+    EXPECT_GE(result.processed_nodes, 2u);
+    EXPECT_EQ(result.incumbent, std::optional<int>{0});
+    bool has_begin_0 = false, has_incumbent = false;
+    for (const auto& e : trace_events) {
+        if (e == "begin:0") has_begin_0 = true;
+        if (e.find("incumbent:") == 0) has_incumbent = true;
+    }
+    EXPECT_TRUE(has_begin_0);
+    EXPECT_TRUE(has_incumbent);
+}
