@@ -492,3 +492,198 @@ TEST(ModelExtra2, X24) { SymbolRegistry::instance().reset(); AbstractLinearMetaM
 TEST(ModelExtra2, X25) { SymbolRegistry::instance().reset(); AbstractLinearMetaModel m; m.set_linear_objective("o", ObjectiveSense::Minimize, sym::Expression(0.0)); EXPECT_TRUE(m.objective().has_value()); }
 TEST(ModelExtra2, X26) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.add_constraint("c", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)), sym::Expression(10.0))); m.set_objective("o", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 1))); EXPECT_TRUE(m.is_valid()); }
 TEST(ModelExtra2, X27) { SymbolRegistry::instance().reset(); MetaModel m; VariableBuilder b; m.add_variable(b.name("x").build()); m.add_variable(b.name("y").build()); m.add_constraint("c", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 1)) + sym::Expression(sym::Variable("y", 2)), sym::Expression(50.0))); m.set_objective("o", ObjectiveSense::Maximize, sym::Expression(sym::Monomial(2.0, sym::Variable("x", 1))) + sym::Expression(sym::Monomial(3.0, sym::Variable("y", 2)))); EXPECT_TRUE(m.is_valid()); }
+
+// ============================================================================
+// IntermediateSymbol trait 体系测试 (Phase 2)
+// ============================================================================
+
+#include <ospf/core/symbol/intermediate_symbol.hpp>
+#include <ospf/core/symbol/expression_symbol.hpp>
+#include <ospf/core/symbol/monomial_cell.hpp>
+#include <ospf/core/symbol/symbol_combination.hpp>
+#include <ospf/core/symbol/symbol_combination_factory.hpp>
+
+TEST(IntermediateSymbol, ExpressionSymbolBasic) {
+    // 创建表达式: 2*x + 3*y + 5
+    using Expr = ExpressionSymbol<double>;
+    std::vector<Expr::Monomial> monomials = {
+        {2.0, 0},  // 2 * var_0
+        {3.0, 1},  // 3 * var_1
+    };
+    auto expr = SymbolCombinationFactory<>::create_expression(monomials, 5.0);
+
+    EXPECT_EQ(expr->category(), Category::Linear);
+    EXPECT_TRUE(expr->cached());
+
+    // 求值: x=10, y=20
+    std::unordered_map<std::size_t, double> values = {{0, 10.0}, {1, 20.0}};
+    auto result = expr->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 85.0);  // 2*10 + 3*20 + 5 = 85
+}
+
+TEST(IntermediateSymbol, MonomialCellBasic) {
+    // 创建单项式: 3 * x^2
+    auto mono = SymbolCombinationFactory<>::create_monomial(3.0, 0, 2.0);
+
+    EXPECT_EQ(mono->category(), Category::Quadratic);
+    EXPECT_DOUBLE_EQ(mono->coefficient(), 3.0);
+    EXPECT_EQ(mono->variable_index(), 0u);
+    EXPECT_DOUBLE_EQ(mono->exponent(), 2.0);
+
+    // 求值: x=5
+    std::unordered_map<std::size_t, double> values = {{0, 5.0}};
+    auto result = mono->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 75.0);  // 3 * 5^2 = 75
+}
+
+TEST(IntermediateSymbol, MonomialCellLinear) {
+    // 创建线性单项式: 2 * x
+    auto mono = SymbolCombinationFactory<>::create_monomial(2.0, 0, 1.0);
+
+    EXPECT_EQ(mono->category(), Category::Linear);
+
+    auto coeffs = mono->linear_coefficients();
+    ASSERT_EQ(coeffs.size(), 1u);
+    EXPECT_EQ(coeffs[0].first, 0u);
+    EXPECT_DOUBLE_EQ(coeffs[0].second, 2.0);
+}
+
+TEST(IntermediateSymbol, SymbolCombinationBasic) {
+    // 创建符号组合: (2*x) + (3*y)
+    auto x = SymbolCombinationFactory<>::create_variable(0);
+    auto y = SymbolCombinationFactory<>::create_variable(1);
+    auto combo = SymbolCombinationFactory<>::create_combination({x, y});
+
+    EXPECT_EQ(combo->dependencies().size(), 2u);
+
+    // 求值: x=10, y=20
+    std::unordered_map<std::size_t, double> values = {{0, 10.0}, {1, 20.0}};
+    auto result = combo->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 30.0);  // 10 + 20 = 30
+}
+
+TEST(IntermediateSymbol, CreateVariable) {
+    auto var = SymbolCombinationFactory<>::create_variable(5);
+    EXPECT_EQ(var->variable_index(), 5u);
+    EXPECT_DOUBLE_EQ(var->coefficient(), 1.0);
+    EXPECT_DOUBLE_EQ(var->exponent(), 1.0);
+}
+
+TEST(IntermediateSymbol, CreateConstant) {
+    auto constant = SymbolCombinationFactory<>::create_constant(42.0);
+    EXPECT_EQ(constant->category(), Category::Linear);
+
+    std::unordered_map<std::size_t, double> values;
+    auto result = constant->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 42.0);
+}
+
+TEST(IntermediateSymbol, IntermediateSymbolId) {
+    auto id = IntermediateSymbolId::from_id(123);
+    EXPECT_EQ(id.id, 123u);
+    EXPECT_EQ(id.name, "sym_123");
+}
+
+TEST(IntermediateSymbol, CategoryValues) {
+    EXPECT_EQ(static_cast<int>(Category::Linear), 0);
+    EXPECT_EQ(static_cast<int>(Category::Quadratic), 1);
+    EXPECT_EQ(static_cast<int>(Category::Polynomial), 2);
+    EXPECT_EQ(static_cast<int>(Category::Nonlinear), 3);
+}
+
+TEST(IntermediateSymbol, NextAutoId) {
+    auto id1 = next_auto_intermediate_symbol_id();
+    auto id2 = next_auto_intermediate_symbol_id();
+    EXPECT_GT(id2, id1);
+}
+
+TEST(IntermediateSymbol, ExpressionSymbolEmpty) {
+    auto expr = SymbolCombinationFactory<>::create_expression({}, 0.0);
+    std::unordered_map<std::size_t, double> values;
+    auto result = expr->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 0.0);
+}
+
+TEST(IntermediateSymbol, ExpressionSymbolSingleMonomial) {
+    using Expr = ExpressionSymbol<double>;
+    std::vector<Expr::Monomial> monomials = {{5.0, 0}};
+    auto expr = SymbolCombinationFactory<>::create_expression(monomials, 0.0);
+
+    std::unordered_map<std::size_t, double> values = {{0, 3.0}};
+    auto result = expr->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 15.0);  // 5 * 3 = 15
+}
+
+TEST(IntermediateSymbol, MonomialCellNegativeCoeff) {
+    auto mono = SymbolCombinationFactory<>::create_monomial(-2.0, 0, 1.0);
+
+    std::unordered_map<std::size_t, double> values = {{0, 5.0}};
+    auto result = mono->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, -10.0);  // -2 * 5 = -10
+}
+
+TEST(IntermediateSymbol, SymbolCombinationEmpty) {
+    auto combo = SymbolCombinationFactory<>::create_combination({});
+    EXPECT_EQ(combo->dependencies().size(), 0u);
+
+    std::unordered_map<std::size_t, double> values;
+    auto result = combo->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 0.0);
+}
+
+TEST(IntermediateSymbol, VariableRange) {
+    VariableRange<double> range{0.0, 10.0};
+    EXPECT_DOUBLE_EQ(range.lower, 0.0);
+    EXPECT_DOUBLE_EQ(range.upper, 10.0);
+}
+
+TEST(IntermediateSymbol, ValueCacheKey) {
+    auto key1 = ValueCacheKey::from_symbol(100);
+    auto key2 = ValueCacheKey::from_symbol(100);
+    auto key3 = ValueCacheKey::from_symbol(200);
+    EXPECT_EQ(key1, key2);
+    EXPECT_NE(key1, key3);
+}
+
+TEST(IntermediateSymbol, RangeCacheKey) {
+    auto key1 = RangeCacheKey::from_symbol(100);
+    auto key2 = RangeCacheKey::from_symbol(100);
+    auto key3 = RangeCacheKey::from_symbol(200);
+    EXPECT_EQ(key1, key2);
+    EXPECT_NE(key1, key3);
+}
+
+TEST(IntermediateSymbol, LinearConstraint) {
+    LinearConstraint<double> lc;
+    lc.coefficients = {{0, 2.0}, {1, 3.0}};
+    lc.rhs = 10.0;
+    lc.sense = LinearConstraint<double>::Sense::LessEqual;
+
+    EXPECT_EQ(lc.coefficients.size(), 2u);
+    EXPECT_DOUBLE_EQ(lc.rhs, 10.0);
+}
+
+TEST(IntermediateSymbol, IntegrationWithFunctionSymbol) {
+    // 验证 FunctionSymbol 可以通过 IntermediateSymbol 链路求值
+    auto var_x = SymbolCombinationFactory<>::create_variable(0);
+    auto var_y = SymbolCombinationFactory<>::create_variable(1);
+
+    // 创建表达式: x + y
+    using Expr = ExpressionSymbol<double>;
+    std::vector<Expr::Monomial> monomials = {{1.0, 0}, {1.0, 1}};
+    auto expr = SymbolCombinationFactory<>::create_expression(monomials, 0.0);
+
+    // 求值
+    std::unordered_map<std::size_t, double> values = {{0, 10.0}, {1, 20.0}};
+    auto result = expr->prepare(values);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 30.0);
+}
