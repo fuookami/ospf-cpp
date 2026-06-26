@@ -1559,3 +1559,74 @@ TEST(Bpp3dDomain, ActualItemOrientedCylinderPackingShapeUpdatesAxis) {
     EXPECT_DOUBLE_EQ(lie_shape.bounding_height, 4.0);
     EXPECT_DOUBLE_EQ(lie_shape.bounding_depth, 8.0);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：packing_result.rs 测试 / Packing result differential tests
+// 对齐 Rust bpp3d/domain/packing/service/tests/packing_result.rs (6 tests)
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/domain/packing/model.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+// 对齐 Rust: packer_produces_result
+// 参考行为：Packer.invoke([bin-1]) → result.packed_bins.len()==1
+TEST(Bpp3dDomain, PackerProducesResult) {
+    PackedBin bin;
+    bin.name = "bin-1";
+    bin.bin_width = 10.0; bin.bin_height = 10.0; bin.bin_depth = 10.0;
+    bin.bin_max_weight = 100.0;
+
+    PackedItem item;
+    item.item_index = 0;
+    item.width = 5.0; item.height = 5.0; item.depth = 5.0; item.weight = 1.0;
+    bin.items.push_back(item);
+
+    Packer packer;
+    auto result = packer.invoke({bin});
+
+    EXPECT_EQ(result.packed_bins.size(), 1u);
+}
+
+// 对齐 Rust: packed_item_actual_volume_cuboid
+// 参考行为：item.actual_volume() == 24.0 (2*3*4)
+TEST(Bpp3dDomain, PackedItemActualVolumeCuboid) {
+    PackedItem item;
+    item.item_index = 0;
+    item.width = 2.0; item.height = 3.0; item.depth = 4.0; item.weight = 1.0;
+
+    EXPECT_NEAR(item.actual_volume(), 24.0, 1e-10);
+}
+
+// 对齐 Rust: packed_bin_total_weight
+// 参考行为：bin.items=[2个item,每个weight=1.0] → total_weight==2.0
+TEST(Bpp3dDomain, PackedBinTotalWeight) {
+    PackedBin bin;
+    bin.name = "bin-1";
+    bin.bin_width = 10.0; bin.bin_height = 10.0; bin.bin_depth = 10.0;
+    bin.bin_max_weight = 100.0;
+
+    PackedItem item0;
+    item0.item_index = 0; item0.width = 5.0; item0.height = 5.0; item0.depth = 5.0; item0.weight = 1.0;
+    PackedItem item1;
+    item1.item_index = 1; item1.width = 5.0; item1.height = 5.0; item1.depth = 5.0; item1.weight = 1.0;
+
+    bin.items = {item0, item1};
+
+    EXPECT_NEAR(bin.total_weight(), 2.0, 1e-10);
+}
+
+// 对齐 Rust: packed_bin_total_actual_volume
+// 参考行为：bin.items=[1个item, w=2,h=3,d=4] → total_actual_volume==24.0
+TEST(Bpp3dDomain, PackedBinTotalActualVolume) {
+    PackedBin bin;
+    bin.name = "bin-1";
+    bin.bin_width = 10.0; bin.bin_height = 10.0; bin.bin_depth = 10.0;
+
+    PackedItem item;
+    item.item_index = 0; item.width = 2.0; item.height = 3.0; item.depth = 4.0; item.weight = 1.0;
+    bin.items = {item};
+
+    EXPECT_NEAR(bin.total_actual_volume(), 24.0, 1e-10);
+}
