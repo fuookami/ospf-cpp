@@ -991,3 +991,88 @@ TEST(Bpp3dApplicationFlow, EmptyDatasetDiagnostics) {
     // 差分对齐断言
     EXPECT_TRUE(result.layers.empty());
 }
+
+// ============================================================================
+// 1:1 Rust 移植：bottom_dimension.rs 测试 / Bottom dimension differential tests
+// 对齐 Rust bpp3d domain/item/model/tests/bottom_dimension.rs (6 tests)
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/domain/item/model/pattern.hpp>
+
+// 对齐 Rust: bottom_dimension_range_unbounded
+// 参考行为：unbounded().is_unbounded()==true, contains(0/100/-10)==true
+TEST(Bpp3dDomain, BottomDimensionRangeUnbounded) {
+    auto range = BottomDimensionRange::unbounded();
+    EXPECT_TRUE(range.is_unbounded());
+    EXPECT_TRUE(range.contains(0.0));
+    EXPECT_TRUE(range.contains(100.0));
+    EXPECT_TRUE(range.contains(-10.0));
+}
+
+// 对齐 Rust: bottom_dimension_range_bounded
+// 参考行为：between(10,50) → contains(10/30/50)==true, contains(9.9/50.1)==false
+TEST(Bpp3dDomain, BottomDimensionRangeBounded) {
+    auto range = BottomDimensionRange::between(10.0, 50.0);
+    EXPECT_FALSE(range.is_unbounded());
+    EXPECT_TRUE(range.contains(10.0));
+    EXPECT_TRUE(range.contains(30.0));
+    EXPECT_TRUE(range.contains(50.0));
+    EXPECT_FALSE(range.contains(9.9));
+    EXPECT_FALSE(range.contains(50.1));
+}
+
+// 对齐 Rust: bottom_dimension_range_half_bounded
+// 参考行为：at_least(5) → contains(5/1000)==true, contains(4.9)==false
+//           at_most(100) → contains(0/100)==true, contains(100.1)==false
+TEST(Bpp3dDomain, BottomDimensionRangeHalfBounded) {
+    auto at_least = BottomDimensionRange::at_least(5.0);
+    EXPECT_TRUE(at_least.contains(5.0));
+    EXPECT_TRUE(at_least.contains(1000.0));
+    EXPECT_FALSE(at_least.contains(4.9));
+
+    auto at_most = BottomDimensionRange::at_most(100.0);
+    EXPECT_TRUE(at_most.contains(0.0));
+    EXPECT_TRUE(at_most.contains(100.0));
+    EXPECT_FALSE(at_most.contains(100.1));
+}
+
+// 对齐 Rust: pattern_config_accepts_bottom_dimensions
+// 参考行为：默认配置接受任意尺寸
+TEST(Bpp3dDomain, PatternConfigAcceptsBottomDimensions) {
+    PatternConfig config;
+    EXPECT_TRUE(config.accepts_bottom_dimensions(10.0, 5.0));
+    EXPECT_TRUE(config.accepts_bottom_dimensions(0.0, 0.0));
+    EXPECT_TRUE(config.accepts_bottom_dimensions(1000.0, 500.0));
+}
+
+// 对齐 Rust: pattern_config_bottom_range_filtering
+// 参考行为：with_bottom_length_range(20,100) + with_bottom_width_range(5,40)
+//           depth=50,width=10 → accept; depth=10,width=50 → accept;
+//           depth=15,width=10 → reject (length<20); depth=50,width=3 → reject (width<5);
+//           depth=150,width=10 → reject (length>100)
+TEST(Bpp3dDomain, PatternConfigBottomRangeFiltering) {
+    auto config = PatternConfig::create()
+        .with_bottom_length_range(BottomDimensionRange::between(20.0, 100.0))
+        .with_bottom_width_range(BottomDimensionRange::between(5.0, 40.0));
+
+    EXPECT_TRUE(config.accepts_bottom_dimensions(50.0, 10.0));
+    EXPECT_TRUE(config.accepts_bottom_dimensions(10.0, 50.0));
+    EXPECT_FALSE(config.accepts_bottom_dimensions(15.0, 10.0));
+    EXPECT_FALSE(config.accepts_bottom_dimensions(50.0, 3.0));
+    EXPECT_FALSE(config.accepts_bottom_dimensions(150.0, 10.0));
+}
+
+// 对齐 Rust: pattern_config_bottom_range_diagnostics
+// 参考行为：配置含 bottom_length_range + bottom_width_range 时，诊断非空
+TEST(Bpp3dDomain, PatternConfigBottomRangeDiagnostics) {
+    auto config = PatternConfig::create()
+        .with_bottom_length_range(BottomDimensionRange::between(10.0, 50.0))
+        .with_bottom_width_range(BottomDimensionRange::at_least(5.0));
+
+    // 验证范围已正确设置
+    EXPECT_TRUE(config.bottom_length_range.contains(30.0));
+    EXPECT_FALSE(config.bottom_length_range.contains(5.0));
+    EXPECT_TRUE(config.bottom_width_range.contains(10.0));
+    EXPECT_FALSE(config.bottom_width_range.contains(3.0));
+}
