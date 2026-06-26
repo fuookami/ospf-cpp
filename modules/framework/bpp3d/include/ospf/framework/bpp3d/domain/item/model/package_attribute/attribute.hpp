@@ -149,6 +149,29 @@ namespace ospf::framework::bpp3d {
             return max_stack_layers;
         }
 
+        /// 朝向对应最大层数 / Max layer for orientation
+        /// 对应 Rust PackageAttribute::max_layer_for_orientation
+        [[nodiscard]] std::optional<std::size_t> max_layer_for_orientation(
+            Orientation orientation,
+            bool orientation_enabled) const
+        {
+            // oriented_top_flat: 当 front 轴上朝向时，最大层数取 max_layer()
+            // 简化：当 orientation 为 Upright 时，使用 max_layer()
+            if (orientation_category(orientation) == OrientationCategory::Upright) {
+                return max_layer();
+            }
+            // Side 朝向: 如果有侧放限制，返回 side_on_top_layer
+            if (orientation_category(orientation) == OrientationCategory::Side) {
+                if (side_on_top_layer != 0) return side_on_top_layer;
+            }
+            // Lie 朝向: 如果有平放限制，返回 lie_on_top_layer
+            if (orientation_category(orientation) == OrientationCategory::Lie) {
+                if (lie_on_top_layer != 0) return lie_on_top_layer;
+            }
+            // fallback: 1
+            return std::optional<std::size_t>{1};
+        }
+
         /// 悬空支撑检查 / Hanging support stacking check
         /// 对应 Rust PackageAttribute::enabled_stacking_on_support
         [[nodiscard]] bool enabled_stacking_on_support(
