@@ -1650,3 +1650,101 @@ TEST(GanttInfra, LocalDateOffsetDefaultIsMidnight) {
     EXPECT_EQ(offset.logical_day(30, 12.0), 30);   // noon → same day
     EXPECT_EQ(offset.logical_day(30, 23.59), 30);  // late night → same day
 }
+
+// ============================================================================
+// 1:1 Rust 移植：infrastructure/time_window.rs 测试 (11 tests)
+// 对齐 Rust gantt/infrastructure/time_window.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/infrastructure/time_window.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_value_of_duration (hours)
+// 参考行为：TimeWindow::hours([8,12), 0.0, true, 1.0).value_of_duration(2h) == 2.0
+TEST(GanttInfra, TimeWindowValueOfDurationHours) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 12), 0.0, true, 1.0);
+    EXPECT_NEAR(window.value_of_duration(2.0), 2.0, 1e-10);
+}
+
+// 对齐 Rust: test_value_of_instant (hours)
+// 参考行为：TimeWindow::hours([8,12), 0.0, true, 1.0).value_of_instant(11h) == 3.0 (11-8=3)
+TEST(GanttInfra, TimeWindowValueOfInstantHours) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 12), 0.0, true, 1.0);
+    EXPECT_NEAR(window.value_of_instant(11.0), 3.0, 1e-10);
+}
+
+// 对齐 Rust: test_minutes_value_of_duration
+// 参考行为：TimeWindow::minutes([8,12), 0.0, true, 15.0).value_of_duration(30min) == 30.0
+TEST(GanttInfra, TimeWindowMinutesValueOfDuration) {
+    auto window = TimeWindow::minutes(TimeRange::create(8, 12), 0.0, true, 15.0);
+    EXPECT_NEAR(window.value_of_duration(0.5), 30.0, 1e-10);  // 0.5h = 30min
+}
+
+// 对齐 Rust: test_minutes_value_of_instant
+// 参考行为：TimeWindow::minutes([8,12), 0.0, true, 15.0).value_of_instant(08:45) == 45.0
+TEST(GanttInfra, TimeWindowMinutesValueOfInstant) {
+    auto window = TimeWindow::minutes(TimeRange::create(8, 12), 0.0, true, 15.0);
+    double instant = 8.75;  // 08:45 = 8 + 45/60
+    EXPECT_NEAR(window.value_of_instant(instant), 45.0, 1e-10);  // (8.75-8)*60 = 45
+}
+
+// 对齐 Rust: test_duration_of
+// 参考行为：TimeWindow::minutes([8,12), 0.0, true, 15.0).duration_of(30.0) == 30min
+TEST(GanttInfra, TimeWindowDurationOf) {
+    auto window = TimeWindow::minutes(TimeRange::create(8, 12), 0.0, true, 15.0);
+    auto dur = window.duration_of(30.0);
+    EXPECT_NEAR(dur, 0.5, 1e-10);  // 30min = 0.5h
+}
+
+// 对齐 Rust: test_time_window_duration
+// 参考行为：TimeWindow::hours([8,12), 0, true, 1).duration() == 4.0
+TEST(GanttInfra, TimeWindowDuration) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 12), 0.0, true, 1.0);
+    EXPECT_NEAR(window.duration(), 4.0, 1e-10);
+}
+
+// 对齐 Rust: test_time_window_default_date_offset
+// 参考行为：TimeWindow::hours([8,12), 5.0, true, 1.0).date_offset == 5.0
+TEST(GanttInfra, TimeWindowDateOffset) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 12), 5.0, true, 1.0);
+    EXPECT_DOUBLE_EQ(window.date_offset_hours, 5.0);
+}
+
+// 对齐 Rust: test_time_window_continues
+// 参考行为：TimeWindow::hours([8,12), 0, true, 1.0).continues == true
+TEST(GanttInfra, TimeWindowContinues) {
+    auto cont = TimeWindow::hours(TimeRange::create(8, 12), 0.0, true, 1.0);
+    EXPECT_TRUE(cont.continues);
+
+    auto disc = TimeWindow::hours(TimeRange::create(8, 12), 0.0, false, 1.0);
+    EXPECT_FALSE(disc.continues);
+}
+
+// 对齐 Rust: test_time_window_interval
+// 参考行为：TimeWindow::hours([8,12), 0, true, 0.5).interval == 0.5h
+TEST(GanttInfra, TimeWindowInterval) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 12), 0.0, true, 0.5);
+    EXPECT_DOUBLE_EQ(window.interval_hours, 0.5);
+}
+
+// 对齐 Rust: test_time_window_seconds_value_of_duration
+// 参考行为：TimeWindow with Seconds unit → value_of_duration(1h) == 3600.0
+TEST(GanttInfra, TimeWindowSecondsValueOfDuration) {
+    TimeWindow window;
+    window.window = TimeRange::create(8, 12);
+    window.duration_unit = DurationUnit::Seconds;
+    window.interval_hours = 1.0;
+    EXPECT_NEAR(window.value_of_duration(1.0), 3600.0, 1e-10);  // 1h = 3600s
+}
+
+// 对齐 Rust: test_time_window_seconds_duration_of
+// 参考行为：TimeWindow with Seconds unit → duration_of(3600.0) == 1.0h
+TEST(GanttInfra, TimeWindowSecondsDurationOf) {
+    TimeWindow window;
+    window.window = TimeRange::create(8, 12);
+    window.duration_unit = DurationUnit::Seconds;
+    window.interval_hours = 1.0;
+    EXPECT_NEAR(window.duration_of(3600.0), 1.0, 1e-10);  // 3600s = 1h
+}
