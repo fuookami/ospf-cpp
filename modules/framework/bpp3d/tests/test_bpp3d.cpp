@@ -863,3 +863,131 @@ TEST(Bpp3dConfigState, StateTracksIterationLimit) {
     EXPECT_EQ(state.status, ColumnGenerationStatus::IterationLimit);
     EXPECT_EQ(state.termination_reason(), "IterationLimitReached");
 }
+
+// ============================================================================
+// 差分对齐：application_flow.rs 测试 / Application flow differential tests
+// 对齐 Rust bpp3d service/tests/application_flow.rs
+// 核心验证：列生成迭代 + MetaModel 执行器端到端集成
+// ============================================================================
+
+/// 影子价格生成器 / Shadow price generator
+/// 对齐 Rust ShadowPriceGenerator（返回带 reduced_cost 的层）
+class ShadowPriceGenerator : public IColumnLayerGenerator {
+public:
+    [[nodiscard]] const std::string& name() const override {
+        static const std::string n = "shadow_generator";
+        return n;
+    }
+
+    [[nodiscard]] std::vector<LayerGenerationResult> generate(
+        const LayerGenerationRequest& request) const override
+    {
+        // 只在有初始层时生成（模拟需要影子价格触发）
+        if (request.existing_layers.empty()) return {};
+
+        BinLayer layer;
+        layer.iteration = request.iteration;
+        layer.from = name();
+        layer.depth = 2.0;
+
+        LayerGenerationResult result;
+        result.layer = layer;
+        result.reduced_cost = -1.0;
+        result.numeric_score = 1.0;
+        result.source = name();
+        return {result};
+    }
+};
+
+// 对齐 Rust: application_service_runs_one_shadow_price_generation_round
+// 参考行为：生成器返回 1 个层 → active_column_count 增加 → 包含 shadow_generator 来源
+TEST(Bpp3dApplicationFlow, ShadowPriceGenerationRound) {
+    // 用 ApplicationService 运行一次列生成迭代
+    ColumnGenerationConfig config;
+    config.max_candidates_per_iteration = 8;
+    config.iteration_limit = 1;
+
+    ColumnGenerationApplicationService service(config);
+
+    BinLayer initial;
+    initial.iteration = 0;
+    initial.from = "seed";
+    initial.depth = 1.0;
+
+    auto result = service.run(
+        {std::make_shared<ShadowPriceGenerator>()},
+        {initial},
+        {"i0"});
+
+    // 差分对齐断言（与 Rust 参考一致）
+    EXPECT_GE(result.layers.size(), 1u);  // 至少有初始层
+    // 验证 shadow_generator 被调用并产生层
+    bool has_shadow = false;
+    for (const auto& layer : result.layers) {
+        if (layer.from == "shadow_generator") {
+            has_shadow = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(has_shadow) << "shadow_generator should have generated a layer";
+}
+
+// 对齐 Rust: application_service_replays_generated_layer_traces_to_render
+// 参考行为：生成器产生层 → layers 包含新层
+TEST(Bpp3dApplicationFlow, GeneratedLayersIncluded) {
+    ColumnGenerationConfig config;
+    config.iteration_limit = 2;
+
+    ColumnGenerationApplicationService service(config);
+
+    BinLayer initial;
+    initial.iteration = 0;
+    initial.from = "seed";
+    initial.depth = 1.0;
+
+    auto result = service.run(
+        {std::make_shared<MockLayerGenerator>()},
+        {initial},
+        {"i0"});
+
+    // 差分对齐断言：生成器产生的层被包含在结果中
+    EXPECT_GE(result.layers.size(), 2u);  // 初始层 + 生成层
+    bool has_mock = false;
+    for (const auto& layer : result.layers) {
+        if (layer.from == "mock") has_mock = true;
+    }
+    EXPECT_TRUE(has_mock);
+}
+
+// 对齐 Rust: application_service_reports_empty_generation_round
+// 参考行为：空生成器 → 只有初始层
+TEST(Bpp3dApplicationFlow, EmptyGenerationRound) {
+    ColumnGenerationConfig config;
+    config.iteration_limit = 1;
+
+    ColumnGenerationApplicationService service(config);
+
+    BinLayer initial;
+    initial.iteration = 0;
+    initial.from = "seed";
+    initial.depth = 1.0;
+
+    // 空生成器列表
+    auto result = service.run({}, {initial}, {"i0"});
+
+    // 差分对齐断言：只有初始层
+    EXPECT_EQ(result.layers.size(), 1u);
+    EXPECT_EQ(result.layers[0].from, "seed");
+}
+
+// 对齐 Rust: application_service_reports_empty_dataset_diagnostics
+// 参考行为：空输入 → 空结果
+TEST(Bpp3dApplicationFlow, EmptyDatasetDiagnostics) {
+    ColumnGenerationApplicationService service;
+
+    // 空输入
+    auto result = service.run({}, {}, {});
+
+    // 差分对齐断言
+    EXPECT_TRUE(result.layers.empty());
+}
