@@ -4,10 +4,14 @@
 /// 探针：验证 C++ 分支定价控制流与 Rust branch_and_price 行为一致
 
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
+#include <ospf/framework/gantt/application/algorithm/policy.hpp>
 
 namespace ospf::framework::gantt {
 
@@ -241,6 +245,93 @@ namespace ospf::framework::gantt {
             }
             return "Unknown";
         }
+    };
+
+    // ============================================================================
+    // MetaModel 执行诊断 / MetaModel execution diagnostics
+    // 对应 Rust Gantt MetaModelExecutionDiagnostics
+    // ============================================================================
+
+    /// MetaModel 执行诊断 / MetaModel execution diagnostics
+    struct GanttMetaModelDiagnostics {
+        std::string model_name;
+        std::size_t variable_count = 0;
+        std::size_t constraint_count = 0;
+        std::size_t task_count = 0;
+        std::size_t resource_count = 0;
+        std::size_t bunch_count = 0;
+    };
+
+    // ============================================================================
+    // MetaModel 求解结果 / MetaModel solver result
+    // ============================================================================
+
+    /// RMP 执行结果 / RMP execution result
+    struct GanttRmpExecution {
+        std::optional<double> objective;
+        std::unordered_map<std::string, double> shadow_price_summary;
+        std::optional<GanttMetaModelDiagnostics> diagnostics;
+        std::unordered_map<std::string, std::string> info;
+    };
+
+    /// Final MILP 执行结果 / Final MILP execution result
+    struct GanttFinalExecution {
+        std::vector<BunchEntry> bunches;
+        std::optional<double> objective;
+        std::optional<GanttMetaModelDiagnostics> diagnostics;
+        std::unordered_map<std::string, std::string> info;
+    };
+
+    // ============================================================================
+    // MetaModel 求解器后端接口 / MetaModel solver backend interface
+    // ============================================================================
+
+    /// MetaModel 求解器后端接口 / MetaModel solver backend interface
+    class GanttMetaModelSolverBackend {
+    public:
+        virtual ~GanttMetaModelSolverBackend() = default;
+        [[nodiscard]] virtual const std::string& name() const = 0;
+        [[nodiscard]] virtual GanttRmpExecution solve_rmp(
+            const GanttMetaModelDiagnostics& diagnostics) = 0;
+        [[nodiscard]] virtual GanttFinalExecution solve_final(
+            const GanttMetaModelDiagnostics& diagnostics) = 0;
+    };
+
+    /// Noop MetaModel 求解器后端 / Noop MetaModel solver backend
+    class GanttNoopSolverBackend : public GanttMetaModelSolverBackend {
+    public:
+        [[nodiscard]] const std::string& name() const override {
+            static const std::string n = "noop";
+            return n;
+        }
+        [[nodiscard]] GanttRmpExecution solve_rmp(const GanttMetaModelDiagnostics&) override {
+            return {};
+        }
+        [[nodiscard]] GanttFinalExecution solve_final(const GanttMetaModelDiagnostics&) override {
+            return {};
+        }
+    };
+
+    // ============================================================================
+    // RMP 执行器接口 / RMP executor interface
+    // ============================================================================
+
+    /// RMP 执行器接口 / RMP executor interface
+    class GanttRmpExecutor {
+    public:
+        virtual ~GanttRmpExecutor() = default;
+        [[nodiscard]] virtual GanttRmpExecution execute(
+            const std::vector<BunchEntry>& bunches,
+            const std::vector<std::string>& task_ids) = 0;
+    };
+
+    /// Final MILP 执行器接口 / Final MILP executor interface
+    class GanttFinalExecutor {
+    public:
+        virtual ~GanttFinalExecutor() = default;
+        [[nodiscard]] virtual GanttFinalExecution execute(
+            const std::vector<BunchEntry>& bunches,
+            const std::vector<std::string>& task_ids) = 0;
     };
 
 }  // namespace ospf::framework::gantt

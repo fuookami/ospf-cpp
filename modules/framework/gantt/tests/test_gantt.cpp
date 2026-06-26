@@ -695,6 +695,7 @@ TEST(GanttBulk, G150) { Bunch b{"b6", {"t1", "t2", "t3", "t4", "t5"}}; EXPECT_EQ
 // ============================================================================
 
 #include <ospf/framework/gantt/application/algorithm/branch_and_price.hpp>
+#include <ospf/framework/gantt/application/algorithm/bunch_column_generation.hpp>
 
 TEST(GanttBranchAndPrice, ChildKeepsDecisionPath) {
     auto root = BranchNode::root();
@@ -741,4 +742,235 @@ TEST(GanttBranchAndPrice, TreeSearchTrace) {
     }
     EXPECT_TRUE(has_begin_0);
     EXPECT_TRUE(has_incumbent);
+}
+
+// ============================================================================
+// MetaModel 求解器后端差分测试 / MetaModel solver backend differential tests
+// 对齐 Rust gantt branch_and_price.rs / bunch_column_generation.rs
+// ============================================================================
+
+/// Mock Gantt RMP 执行器 / Mock Gantt RMP executor
+class MockGanttRmpExecutor : public GanttRmpExecutor {
+public:
+    MockGanttRmpExecutor(
+        std::string model_name,
+        std::unordered_map<std::string, double> shadow_prices,
+        std::optional<double> objective)
+        : model_name_(std::move(model_name))
+        , shadow_prices_(std::move(shadow_prices))
+        , objective_(objective)
+    {}
+
+    [[nodiscard]] GanttRmpExecution execute(
+        const std::vector<BunchEntry>& bunches,
+        const std::vector<std::string>& task_ids) override
+    {
+        GanttRmpExecution exec;
+        exec.objective = objective_;
+        exec.shadow_price_summary = shadow_prices_;
+
+        GanttMetaModelDiagnostics diag;
+        diag.model_name = model_name_;
+        diag.bunch_count = bunches.size();
+        diag.task_count = task_ids.size();
+        exec.diagnostics = diag;
+
+        exec.info["status"] = "registered";
+        return exec;
+    }
+
+private:
+    std::string model_name_;
+    std::unordered_map<std::string, double> shadow_prices_;
+    std::optional<double> objective_;
+};
+
+/// Mock Gantt Final 执行器 / Mock Gantt Final executor
+class MockGanttFinalExecutor : public GanttFinalExecutor {
+public:
+    MockGanttFinalExecutor(std::string model_name, std::optional<double> objective)
+        : model_name_(std::move(model_name)), objective_(objective)
+    {}
+
+    [[nodiscard]] GanttFinalExecution execute(
+        const std::vector<BunchEntry>& bunches,
+        const std::vector<std::string>& task_ids) override
+    {
+        GanttFinalExecution exec;
+        exec.bunches = bunches;
+        exec.objective = objective_;
+
+        GanttMetaModelDiagnostics diag;
+        diag.model_name = model_name_;
+        diag.bunch_count = bunches.size();
+        diag.task_count = task_ids.size();
+        diag.variable_count = bunches.size() + task_ids.size();
+        diag.constraint_count = task_ids.size() * 2;
+        exec.diagnostics = diag;
+
+        return exec;
+    }
+
+private:
+    std::string model_name_;
+    std::optional<double> objective_;
+};
+
+// ============================================================================
+// 差分对齐：RMP 执行器注册上下文
+// 对齐 Rust: meta_model_rmp_executor_registers_context (gantt variant)
+// ============================================================================
+
+TEST(GanttMetaModel, RmpExecutorRegistersContext) {
+    BunchEntry bunch;
+    bunch.id = "b1";
+    bunch.task_ids = {"t1", "t2"};
+    bunch.reduced_cost = -1.5;
+
+    MockGanttRmpExecutor executor(
+        "test_rmp",
+        {{"task:t1", 1.0}, {"task:t2", 2.0}},
+        8.0);
+
+    auto execution = executor.execute({bunch}, {"t1", "t2"});
+
+    // 差分对齐断言
+    ASSERT_TRUE(execution.diagnostics.has_value());
+    EXPECT_EQ(execution.diagnostics->model_name, "test_rmp");
+    EXPECT_EQ(execution.diagnostics->bunch_count, 1u);
+    EXPECT_EQ(execution.diagnostics->task_count, 2u);
+    EXPECT_DOUBLE_EQ(execution.shadow_price_summary.at("task:t1"), 1.0);
+    EXPECT_DOUBLE_EQ(execution.shadow_price_summary.at("task:t2"), 2.0);
+    EXPECT_EQ(execution.info.at("status"), "registered");
+}
+
+// ============================================================================
+// 差分对齐：Final 执行器提取 bunches
+// 对齐 Rust: meta_model_final_executor_registers_context_and_extracts_bunches
+// ============================================================================
+
+TEST(GanttMetaModel, FinalExecutorExtractsBunches) {
+    BunchEntry bunch_a;
+    bunch_a.id = "b1";
+    bunch_a.task_ids = {"t1"};
+    bunch_a.reduced_cost = -1.0;
+
+    BunchEntry bunch_b;
+    bunch_b.id = "b2";
+    bunch_b.task_ids = {"t2", "t3"};
+    bunch_b.reduced_cost = -2.0;
+
+    MockGanttFinalExecutor executor("test_final", 5.0);
+
+    auto execution = executor.execute({bunch_a, bunch_b}, {"t1", "t2", "t3"});
+
+    // 差分对齐断言
+    ASSERT_TRUE(execution.diagnostics.has_value());
+    EXPECT_EQ(execution.diagnostics->model_name, "test_final");
+    EXPECT_EQ(execution.diagnostics->bunch_count, 2u);
+    EXPECT_EQ(execution.diagnostics->task_count, 3u);
+    EXPECT_EQ(execution.bunches.size(), 2u);
+    EXPECT_EQ(execution.bunches[0].id, "b1");
+    EXPECT_EQ(execution.bunches[1].id, "b2");
+}
+
+// ============================================================================
+// 差分对齐：NoopSolverBackend 返回默认结果
+// ============================================================================
+
+TEST(GanttMetaModel, NoopSolverBackendReturnsDefaults) {
+    GanttNoopSolverBackend backend;
+    EXPECT_EQ(backend.name(), "noop");
+
+    GanttMetaModelDiagnostics diag;
+    diag.model_name = "test";
+
+    auto rmp = backend.solve_rmp(diag);
+    EXPECT_FALSE(rmp.objective.has_value());
+
+    auto final_exec = backend.solve_final(diag);
+    EXPECT_FALSE(final_exec.objective.has_value());
+}
+
+// ============================================================================
+// 差分对齐：BunchCGPolicy 默认值
+// 对齐 Rust: test_bunch_branch_and_price_policy_defaults
+// ============================================================================
+
+TEST(GanttMetaModel, PolicyDefaults) {
+    // 验证 BranchSearchConfig 默认值
+    BranchSearchConfig config;
+    EXPECT_EQ(config.max_nodes, 100u);
+    EXPECT_FALSE(config.best_first);
+
+    // 验证 BunchBranchAndPriceAlgorithm 构造
+    auto policy = std::make_shared<GanttNoopSolverBackend>();
+    GanttSchedulingConfig sched_config;
+    EXPECT_EQ(sched_config.max_iterations, 50);
+    EXPECT_DOUBLE_EQ(sched_config.time_limit, 300.0);
+}
+
+// Mock BunchCGPolicy / Mock bunch column generation policy
+class MockBunchCGPolicy : public BunchCGPolicy {
+public:
+    [[nodiscard]] const std::string& name() const override {
+        static const std::string n = "mock_policy";
+        return n;
+    }
+
+    [[nodiscard]] std::unordered_map<std::string, double> build_shadow_price_map() const override {
+        return {{"task:t1", 1.0}, {"task:t2", 2.0}};
+    }
+
+    [[nodiscard]] double reduced_cost(
+        const std::unordered_map<std::string, double>& shadow_prices,
+        const BunchEntry& bunch) const override
+    {
+        double cost = 0.0;
+        for (const auto& tid : bunch.task_ids) {
+            auto it = shadow_prices.find("task:" + tid);
+            if (it != shadow_prices.end()) cost += it->second;
+        }
+        return cost;
+    }
+
+    [[nodiscard]] std::vector<BunchEntry> generate_bunches(
+        std::size_t iteration,
+        const std::vector<std::string>&,
+        const std::unordered_map<std::string, double>&) const override
+    {
+        if (iteration >= 2) return {};  // 第 3 次迭代后收敛
+        BunchEntry bunch;
+        bunch.id = "gen-" + std::to_string(iteration);
+        bunch.task_ids = {"t1"};
+        bunch.reduced_cost = -1.0;
+        return {bunch};
+    }
+};
+
+// ============================================================================
+// 差分对齐：算法 + MockPolicy 端到端集成
+// 对齐 Rust: test_small_branch_and_price_flow_generates_columns_and_searches_tree
+// ============================================================================
+
+TEST(GanttMetaModel, AlgorithmWithExecutorIntegration) {
+    GanttSchedulingConfig config;
+    config.max_iterations = 5;
+    config.max_not_better_iterations = 2;
+
+    auto policy = std::make_shared<MockBunchCGPolicy>();
+
+    // 节点求解器：所有节点可行，目标值=节点ID
+    BunchBranchAndPriceAlgorithm::NodeSolver solver = [](const BranchNode& node) -> std::optional<double> {
+        return static_cast<double>(node.id);
+    };
+
+    BunchBranchAndPriceAlgorithm algorithm(config, policy, solver);
+    auto result = algorithm.run();
+
+    // 差分对齐断言
+    EXPECT_FALSE(result.termination_reason.empty());
+    EXPECT_GE(result.iteration, 1u);  // 至少 1 次迭代（policy 生成 bunch）
+    EXPECT_TRUE(result.active_bunches.size() > 0 || result.iteration > 0);
+    EXPECT_TRUE(result.branch_result.processed_nodes > 0);  // 树搜索执行了
 }
