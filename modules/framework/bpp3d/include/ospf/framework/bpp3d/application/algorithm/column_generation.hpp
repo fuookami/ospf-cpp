@@ -1,10 +1,11 @@
 #pragma once
 /// BPP3D application algorithm/column_generation /// 1:1 对应 Rust bpp3d/application/algorithm/column_generation.rs
-/// 列生成框架：ColumnGenerationAlgorithm 控制流（generate_once / add_columns / remove_columns / active_layers）
-/// 探针：验证 C++ 列生成控制流与 Rust ColumnGenerationAlgorithm 行为一致
+/// 完整列生成框架：Config / State / Algorithm / ApplicationService
+/// 探针已验证控制流；扩展为完整框架含收敛/终止/应用入口
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -13,20 +14,15 @@
 namespace ospf::framework::bpp3d {
 
     // ============================================================================
-    // 领域类型（探针最小版）/ Domain types (probe minimal)
+    // 领域类型 / Domain types
     // 对应 Rust BinLayer<V, U>
     // ============================================================================
 
     /// 装箱层 / Packing layer
     /// 对应 Rust BinLayer<V, U>
     struct BinLayer {
-        /// 迭代号 / Iteration
         int iteration = 0;
-
-        /// 来源（生成器名） / Source (generator name)
         std::string from;
-
-        /// 层深度 / Layer depth
         double depth = 0.0;
     };
 
@@ -65,56 +61,102 @@ namespace ospf::framework::bpp3d {
     class IColumnLayerGenerator {
     public:
         virtual ~IColumnLayerGenerator() = default;
-
-        /// 生成器名称 / Generator name
         [[nodiscard]] virtual const std::string& name() const = 0;
-
-        /// 生成层 / Generate layers
-        /// 对应 Rust LayerGenerator::generate
         [[nodiscard]] virtual std::vector<LayerGenerationResult> generate(
             const LayerGenerationRequest& request) const = 0;
     };
 
     // ============================================================================
-    // 列生成状态 / Column generation state
-    // 对应 Rust ColumnGenerationStatus + ColumnGenerationApplicationState
+    // 目标方向 / Objective sense
+    // 对应 Rust ObjectiveSense
     // ============================================================================
 
-    /// 列生成状态 / Column generation status
-    enum class ColumnGenerationStatus {
-        NotStarted,
-        Running,
-        Finished
-    };
-
-    /// 列生成应用状态 / Column generation application state
-    /// 对应 Rust ColumnGenerationApplicationState
-    struct ColumnGenerationApplicationState {
-        ColumnGenerationStatus status = ColumnGenerationStatus::NotStarted;
-        int iteration = 0;
-        int total_columns = 0;
-        std::vector<BinLayer> layers;
-
-        /// 启动 / Start
-        void start() {
-            status = ColumnGenerationStatus::Running;
-        }
-
-        /// 推进迭代 / Advance iteration
-        void advance_iteration() {
-            ++iteration;
-        }
+    /// 目标方向 / Objective sense
+    /// 对应 Rust ObjectiveSense
+    enum class ObjectiveSense {
+        Minimize,
+        Maximize
     };
 
     // ============================================================================
     // 列生成配置 / Column generation config
-    // 对应 Rust ColumnGenerationConfig
+    // 对应 Rust ColumnGenerationConfig（完整字段）
     // ============================================================================
 
     /// 列生成配置 / Column generation config
+    /// 对应 Rust ColumnGenerationConfig
     struct ColumnGenerationConfig {
+        /// 最大迭代次数 / Maximum iterations
+        int max_iterations = 10;
+        /// 最大未改进迭代次数 / Maximum non-improving iterations
+        int max_not_better_iterations = 3;
+        /// 最大列数量 / Maximum column count
+        int max_column_amount = 1000;
+        /// 每轮最大候选数 / Maximum candidates per iteration
         int max_candidates_per_iteration = 8;
+        /// reduced cost 接受阈值 / Reduced-cost acceptance tolerance
+        double reduced_cost_tolerance = 1e-6;
+        /// 目标方向 / Objective sense
+        ObjectiveSense objective_sense = ObjectiveSense::Minimize;
+        /// 迭代限制（兼容探针） / Iteration limit (probe compat)
         int iteration_limit = 10;
+    };
+
+    // ============================================================================
+    // 列生成状态 / Column generation status
+    // 对应 Rust ColumnGenerationStatus（全部变体）
+    // ============================================================================
+
+    /// 列生成状态 / Column generation status
+    /// 对应 Rust ColumnGenerationStatus（全部变体）
+    enum class ColumnGenerationStatus {
+        NotStarted,
+        Running,
+        Converged,
+        IterationLimit,
+        ColumnLimit,
+        TimeLimit,
+        Failed
+    };
+
+    /// 列生成状态 / Column generation state
+    /// 对应 Rust ColumnGenerationState（完整字段）
+    struct ColumnGenerationState {
+        int iteration = 0;
+        int total_columns = 0;
+        int not_better_iterations = 0;
+        std::optional<double> best_objective;
+        ColumnGenerationStatus status = ColumnGenerationStatus::NotStarted;
+
+        /// 是否应该继续 / Should continue
+        [[nodiscard]] bool should_continue(const ColumnGenerationConfig& config) const {
+            return status == ColumnGenerationStatus::NotStarted
+                || (status == ColumnGenerationStatus::Running
+                    && iteration < config.iteration_limit
+                    && total_columns < config.max_column_amount
+                    && not_better_iterations < config.max_not_better_iterations);
+        }
+
+        void start() { status = ColumnGenerationStatus::Running; }
+        void advance_iteration() { ++iteration; }
+        void mark_converged() { status = ColumnGenerationStatus::Converged; }
+        void mark_iteration_limit() { status = ColumnGenerationStatus::IterationLimit; }
+        void mark_column_limit() { status = ColumnGenerationStatus::ColumnLimit; }
+        void mark_time_limit() { status = ColumnGenerationStatus::TimeLimit; }
+        void mark_failed() { status = ColumnGenerationStatus::Failed; }
+
+        [[nodiscard]] std::string termination_reason() const {
+            switch (status) {
+                case ColumnGenerationStatus::Converged: return "PricingConverged";
+                case ColumnGenerationStatus::IterationLimit: return "IterationLimitReached";
+                case ColumnGenerationStatus::ColumnLimit: return "ColumnLimitReached";
+                case ColumnGenerationStatus::TimeLimit: return "TimeLimitReached";
+                case ColumnGenerationStatus::Failed: return "Failed";
+                case ColumnGenerationStatus::NotStarted: return "NotStarted";
+                case ColumnGenerationStatus::Running: return "Running";
+            }
+            return "Unknown";
+        }
     };
 
     // ============================================================================
@@ -123,28 +165,31 @@ namespace ospf::framework::bpp3d {
     // ============================================================================
 
     /// 列生成结果 / Column generation result
+    /// 对应 Rust ColumnGenerationResult<V, U>
     struct ColumnGenerationResult {
-        ColumnGenerationApplicationState state;
+        ColumnGenerationState state;
         std::vector<BinLayer> layers;
         std::unordered_map<std::string, std::string> info;
+
+        [[nodiscard]] const std::string& termination_reason() const {
+            return info.at("termination_reason");
+        }
     };
 
     // ============================================================================
     // 列生成算法 / Column generation algorithm
     // 对应 Rust ColumnGenerationAlgorithm<V, U>
-    // 核心控制流：generate_once → layer generation → add_columns → advance_iteration
+    // 完整框架：generate_once / add_columns / remove_columns / active_layers / should_continue / result
     // ============================================================================
 
     /// 列生成算法 / Column generation algorithm
     /// 对应 Rust ColumnGenerationAlgorithm<V, U>
     class ColumnGenerationAlgorithm {
     public:
-        /// 构造 / Construct
         explicit ColumnGenerationAlgorithm(ColumnGenerationConfig config)
             : config_(std::move(config)) {}
 
         /// 添加初始层 / Add initial layers
-        /// 对应 Rust ColumnGenerationAlgorithm::add_initial_layers
         std::vector<BinLayer> add_initial_layers(std::vector<BinLayer> layers) {
             for (auto& layer : layers) {
                 layer.iteration = 0;
@@ -155,7 +200,6 @@ namespace ospf::framework::bpp3d {
         }
 
         /// 添加列 / Add columns
-        /// 对应 Rust ColumnGenerationAlgorithm::add_columns
         void add_columns(int iteration, std::vector<BinLayer> layers) {
             for (auto& layer : layers) {
                 layer.iteration = iteration;
@@ -165,7 +209,6 @@ namespace ospf::framework::bpp3d {
         }
 
         /// 移除列 / Remove columns
-        /// 对应 Rust ColumnGenerationAlgorithm::remove_columns
         void remove_columns(const std::vector<std::size_t>& column_indices) {
             for (std::size_t idx : column_indices) {
                 if (idx < layer_aggregation_.size() && !removed_.count(idx)) {
@@ -176,7 +219,6 @@ namespace ospf::framework::bpp3d {
         }
 
         /// 活跃层 / Active layers
-        /// 对应 Rust ColumnGenerationAlgorithm::active_layers
         [[nodiscard]] std::vector<BinLayer> active_layers() const {
             std::vector<BinLayer> result;
             for (std::size_t i = 0; i < layer_aggregation_.size(); ++i) {
@@ -187,19 +229,16 @@ namespace ospf::framework::bpp3d {
             return result;
         }
 
-        /// 活跃列数 / Active column count
         [[nodiscard]] std::size_t active_column_count() const {
             return layer_aggregation_.size() - removed_count_;
         }
 
-        /// 已移除列数 / Removed column count
         [[nodiscard]] std::size_t removed_column_count() const {
             return removed_count_;
         }
 
         /// 生成一次 / Generate once
-        /// 对应 Rust ColumnGenerationAlgorithm::generate_once
-        /// 核心控制流：构造请求 → 生成层 → 添加列 → 推进迭代
+        /// 核心控制流：构造请求 → 生成层 → 添加列 → 收敛检查 → 推进迭代
         [[nodiscard]] std::vector<LayerGenerationResult> generate_once(
             const std::vector<std::string>& item_ids,
             const std::vector<LayerGenerationDemandEntry>& /*demand_entries*/)
@@ -222,6 +261,15 @@ namespace ospf::framework::bpp3d {
                 }
             }
 
+            // 检查 reduced cost 改善 / Check reduced cost improvement
+            bool improved = false;
+            for (const auto& r : results) {
+                if (r.reduced_cost < -config_.reduced_cost_tolerance) {
+                    improved = true;
+                    break;
+                }
+            }
+
             // 提取层并添加为列 / Extract layers and add as columns
             std::vector<BinLayer> new_layers;
             for (const auto& result : results) {
@@ -229,39 +277,260 @@ namespace ospf::framework::bpp3d {
             }
             add_columns(state_.iteration, std::move(new_layers));
 
+            // 更新未改进计数 / Update non-improving count
+            if (improved) {
+                state_.not_better_iterations = 0;
+            } else {
+                ++state_.not_better_iterations;
+            }
+
             state_.advance_iteration();
+
+            // 终止判断 / Termination check
+            if (state_.not_better_iterations >= config_.max_not_better_iterations) {
+                state_.mark_converged();
+            } else if (state_.iteration >= config_.iteration_limit) {
+                state_.mark_iteration_limit();
+            } else if (state_.total_columns >= config_.max_column_amount) {
+                state_.mark_column_limit();
+            }
+
             return results;
         }
 
-        /// 是否继续 / Should continue
-        /// 对应 Rust ColumnGenerationAlgorithm::should_continue
         [[nodiscard]] bool should_continue() const {
-            return state_.iteration < config_.iteration_limit;
+            return state_.should_continue(config_);
         }
 
-        /// 构造结果 / Build result
-        /// 对应 Rust ColumnGenerationAlgorithm::result
         [[nodiscard]] ColumnGenerationResult result() const {
             ColumnGenerationResult r;
             r.state = state_;
             r.layers = active_layers();
             r.info["framework_lifecycle_active_column_count"] = std::to_string(active_column_count());
             r.info["framework_lifecycle_removed_column_count"] = std::to_string(removed_count_);
+            r.info["termination_reason"] = state_.termination_reason();
             return r;
         }
 
-        /// 添加生成器 / Add generator
         void add_generator(std::shared_ptr<IColumnLayerGenerator> generator) {
             generators_.push_back(std::move(generator));
         }
 
+        [[nodiscard]] const ColumnGenerationState& state() const { return state_; }
+        [[nodiscard]] const ColumnGenerationConfig& config() const { return config_; }
+
     private:
         ColumnGenerationConfig config_;
-        ColumnGenerationApplicationState state_;
+        ColumnGenerationState state_;
         std::vector<BinLayer> layer_aggregation_;
         std::unordered_set<std::size_t> removed_;
         std::size_t removed_count_ = 0;
         std::vector<std::shared_ptr<IColumnLayerGenerator>> generators_;
+    };
+
+    // ============================================================================
+    // 列生成应用服务 / Column generation application service
+    // 对应 Rust ColumnGenerationApplicationService
+    // ============================================================================
+
+    /// 列生成应用服务 / Column generation application service
+    /// 对应 Rust ColumnGenerationApplicationService
+    class ColumnGenerationApplicationService {
+    public:
+        explicit ColumnGenerationApplicationService(ColumnGenerationConfig config = {})
+            : config_(std::move(config)) {}
+
+        [[nodiscard]] ColumnGenerationApplicationService create_algorithm() const {
+            return ColumnGenerationApplicationService(config_);
+        }
+
+        [[nodiscard]] const ColumnGenerationConfig& config() const {
+            return config_;
+        }
+
+        /// 运行列生成 / Run column generation
+        /// 端到端入口：创建算法 → 添加生成器 → 迭代求解 → 返回结果
+        [[nodiscard]] ColumnGenerationResult run(
+            std::vector<std::shared_ptr<IColumnLayerGenerator>> generators,
+            std::vector<BinLayer> initial_layers = {},
+            std::vector<std::string> item_ids = {}) const
+        {
+            ColumnGenerationAlgorithm algorithm(config_);
+            for (auto& gen : generators) {
+                algorithm.add_generator(gen);
+            }
+            if (!initial_layers.empty()) {
+                algorithm.add_initial_layers(std::move(initial_layers));
+            }
+
+            while (algorithm.should_continue()) {
+                auto results = algorithm.generate_once(item_ids, {});
+                if (results.empty()) {
+                    break;
+                }
+            }
+
+            return algorithm.result();
+        }
+
+    private:
+        ColumnGenerationConfig config_;
+    };
+
+    // ============================================================================
+    // MetaModel 执行诊断 / MetaModel execution diagnostics
+    // 对应 Rust MetaModelExecutionDiagnostics
+    // ============================================================================
+
+    /// MetaModel 执行诊断 / MetaModel execution diagnostics
+    /// 对应 Rust MetaModelExecutionDiagnostics
+    struct MetaModelExecutionDiagnostics {
+        std::string model_name;
+        std::size_t variable_count = 0;
+        std::size_t constraint_count = 0;
+        std::size_t demand_count = 0;
+        std::size_t layer_count = 0;
+        std::size_t bin_count = 0;
+    };
+
+    // ============================================================================
+    // MetaModel 求解结果 / MetaModel executor solve result
+    // 对应 Rust MetaModelExecutorSolveResult
+    // ============================================================================
+
+    /// MetaModel 求解结果 / MetaModel executor solve result
+    /// 对应 Rust MetaModelExecutorSolveResult
+    struct MetaModelExecutorSolveResult {
+        /// 目标值 / Objective value
+        std::optional<double> objective;
+        /// 变量值 / Variable values
+        std::unordered_map<std::string, double> variable_values;
+        /// 影子价格 / Shadow prices
+        std::unordered_map<std::string, double> shadow_prices;
+        /// 信息 / Info
+        std::unordered_map<std::string, std::string> info;
+    };
+
+    // ============================================================================
+    // RMP 执行结果 / RMP execution result
+    // 对应 Rust ColumnGenerationRmpExecution
+    // ============================================================================
+
+    /// RMP 执行结果 / RMP execution result
+    /// 对应 Rust ColumnGenerationRmpExecution
+    struct ColumnGenerationRmpExecution {
+        /// 目标值 / Objective
+        std::optional<double> objective;
+        /// 影子价格汇总 / Shadow price summary
+        std::unordered_map<std::string, double> shadow_price_summary;
+        /// 诊断 / Diagnostics
+        std::optional<MetaModelExecutionDiagnostics> diagnostics;
+        /// 信息 / Info
+        std::unordered_map<std::string, std::string> info;
+    };
+
+    // ============================================================================
+    // Final MILP 执行结果 / Final MILP execution result
+    // 对应 Rust ColumnGenerationFinalExecution
+    // ============================================================================
+
+    /// Final MILP 执行结果 / Final MILP execution result
+    /// 对应 Rust ColumnGenerationFinalExecution
+    struct ColumnGenerationFinalExecution {
+        /// 活跃层 / Layers
+        std::vector<BinLayer> layers;
+        /// 目标值 / Objective
+        std::optional<double> objective;
+        /// 诊断 / Diagnostics
+        std::optional<MetaModelExecutionDiagnostics> diagnostics;
+        /// 信息 / Info
+        std::unordered_map<std::string, std::string> info;
+    };
+
+    // ============================================================================
+    // MetaModel 求解器后端接口 / MetaModel solver backend interface
+    // 对应 Rust MetaModelSolverBackend trait
+    // ============================================================================
+
+    /// MetaModel 求解器后端接口 / MetaModel solver backend interface
+    /// 对应 Rust MetaModelSolverBackend trait
+    class MetaModelSolverBackend {
+    public:
+        virtual ~MetaModelSolverBackend() = default;
+
+        /// 后端名称 / Backend name
+        [[nodiscard]] virtual const std::string& name() const = 0;
+
+        /// 求解 RMP LP / Solve RMP LP
+        /// 对应 Rust MetaModelSolverBackend::solve_rmp
+        [[nodiscard]] virtual MetaModelExecutorSolveResult solve_rmp(
+            const MetaModelExecutionDiagnostics& diagnostics) = 0;
+
+        /// 求解 final MILP / Solve final MILP
+        /// 对应 Rust MetaModelSolverBackend::solve_final
+        [[nodiscard]] virtual MetaModelExecutorSolveResult solve_final(
+            const MetaModelExecutionDiagnostics& diagnostics) = 0;
+    };
+
+    // ============================================================================
+    // Noop MetaModel 求解器后端 / Noop MetaModel solver backend
+    // 对应 Rust NoopMetaModelSolverBackend
+    // ============================================================================
+
+    /// Noop MetaModel 求解器后端 / Noop MetaModel solver backend
+    /// 对应 Rust NoopMetaModelSolverBackend（返回默认结果，用于测试）
+    class NoopMetaModelSolverBackend : public MetaModelSolverBackend {
+    public:
+        [[nodiscard]] const std::string& name() const override {
+            static const std::string n = "noop";
+            return n;
+        }
+
+        [[nodiscard]] MetaModelExecutorSolveResult solve_rmp(
+            const MetaModelExecutionDiagnostics&) override {
+            return MetaModelExecutorSolveResult{};
+        }
+
+        [[nodiscard]] MetaModelExecutorSolveResult solve_final(
+            const MetaModelExecutionDiagnostics&) override {
+            return MetaModelExecutorSolveResult{};
+        }
+    };
+
+    // ============================================================================
+    // RMP 执行器接口 / RMP executor interface
+    // 对应 Rust ColumnGenerationRmpExecutor trait
+    // ============================================================================
+
+    /// RMP 执行器接口 / RMP executor interface
+    /// 对应 Rust ColumnGenerationRmpExecutor trait
+    class ColumnGenerationRmpExecutor {
+    public:
+        virtual ~ColumnGenerationRmpExecutor() = default;
+
+        /// 执行 RMP / Execute RMP
+        /// 对应 Rust ColumnGenerationRmpExecutor::execute
+        [[nodiscard]] virtual ColumnGenerationRmpExecution execute(
+            const std::vector<BinLayer>& layers,
+            const std::vector<std::string>& item_ids) = 0;
+    };
+
+    // ============================================================================
+    // Final MILP 执行器接口 / Final MILP executor interface
+    // 对应 Rust ColumnGenerationFinalExecutor trait
+    // ============================================================================
+
+    /// Final MILP 执行器接口 / Final MILP executor interface
+    /// 对应 Rust ColumnGenerationFinalExecutor trait
+    class ColumnGenerationFinalExecutor {
+    public:
+        virtual ~ColumnGenerationFinalExecutor() = default;
+
+        /// 执行 final MILP / Execute final MILP
+        /// 对应 Rust ColumnGenerationFinalExecutor::execute
+        [[nodiscard]] virtual ColumnGenerationFinalExecution execute(
+            const std::vector<BinLayer>& layers,
+            const std::vector<std::string>& item_ids) = 0;
     };
 
 }  // namespace ospf::framework::bpp3d

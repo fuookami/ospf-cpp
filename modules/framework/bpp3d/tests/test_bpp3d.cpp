@@ -609,3 +609,196 @@ TEST(Bpp3dColumnGeneration, IterationAdvances) {
     // 第 2 次迭代后：iteration==2, active_column_count==2
     EXPECT_EQ(algorithm.active_column_count(), 2u);
 }
+
+// ============================================================================
+// MetaModel 求解器后端差分测试 / MetaModel solver backend differential tests
+// 对齐 Rust bpp3d service/tests/meta_model_executors.rs
+// ============================================================================
+
+/// Mock RMP 执行器 / Mock RMP executor
+/// 对应 Rust MetaModelRmpExecutor
+class MockRmpExecutor : public ColumnGenerationRmpExecutor {
+public:
+    MockRmpExecutor(
+        std::string model_name,
+        std::unordered_map<std::string, double> shadow_prices,
+        std::optional<double> objective)
+        : model_name_(std::move(model_name))
+        , shadow_prices_(std::move(shadow_prices))
+        , objective_(objective)
+    {}
+
+    [[nodiscard]] ColumnGenerationRmpExecution execute(
+        const std::vector<BinLayer>& layers,
+        const std::vector<std::string>& item_ids) override
+    {
+        ColumnGenerationRmpExecution exec;
+        exec.objective = objective_;
+        exec.shadow_price_summary = shadow_prices_;
+
+        MetaModelExecutionDiagnostics diag;
+        diag.model_name = model_name_;
+        diag.variable_count = layers.size();
+        diag.demand_count = item_ids.size();
+        diag.layer_count = layers.size();
+        exec.diagnostics = diag;
+
+        exec.info["status"] = "registered";
+        return exec;
+    }
+
+private:
+    std::string model_name_;
+    std::unordered_map<std::string, double> shadow_prices_;
+    std::optional<double> objective_;
+};
+
+/// Mock Final 执行器 / Mock Final executor
+/// 对应 Rust MetaModelFinalExecutor
+class MockFinalExecutor : public ColumnGenerationFinalExecutor {
+public:
+    MockFinalExecutor(
+        std::string model_name,
+        std::optional<double> objective)
+        : model_name_(std::move(model_name))
+        , objective_(objective)
+    {}
+
+    [[nodiscard]] ColumnGenerationFinalExecution execute(
+        const std::vector<BinLayer>& layers,
+        const std::vector<std::string>& item_ids) override
+    {
+        ColumnGenerationFinalExecution exec;
+        exec.layers = layers;
+        exec.objective = objective_;
+
+        MetaModelExecutionDiagnostics diag;
+        diag.model_name = model_name_;
+        diag.variable_count = layers.size() + 1;  // +1 for bin variable
+        diag.constraint_count = item_ids.size() * 2;  // demand constraints
+        diag.demand_count = item_ids.size();
+        diag.layer_count = layers.size();
+        diag.bin_count = 1;
+        exec.diagnostics = diag;
+
+        return exec;
+    }
+
+private:
+    std::string model_name_;
+    std::optional<double> objective_;
+};
+
+// ============================================================================
+// 差分对齐：RMP 执行器注册上下文
+// 对齐 Rust: meta_model_rmp_executor_registers_context
+// 参考行为：diagnostics.model_name=="test_rmp", variable_count==1,
+//           demand_count==2, shadow_price_summary[item:i0]==1.5, info[status]=="registered"
+// ============================================================================
+
+TEST(Bpp3dMetaModel, RmpExecutorRegistersContext) {
+    BinLayer layer;
+    layer.iteration = 0;
+    layer.from = "seed";
+    layer.depth = 1.0;
+
+    MockRmpExecutor executor(
+        "test_rmp",
+        {{"item:i0", 1.5}, {"item:i1", 2.5}},
+        9.0);
+
+    auto execution = executor.execute({layer}, {"i0", "i1"});
+
+    // 差分对齐断言（与 Rust 参考一致）
+    ASSERT_TRUE(execution.diagnostics.has_value());
+    EXPECT_EQ(execution.diagnostics->model_name, "test_rmp");
+    EXPECT_EQ(execution.diagnostics->variable_count, 1u);
+    EXPECT_EQ(execution.diagnostics->demand_count, 2u);
+    EXPECT_DOUBLE_EQ(execution.shadow_price_summary.at("item:i0"), 1.5);
+    EXPECT_DOUBLE_EQ(execution.shadow_price_summary.at("item:i1"), 2.5);
+    EXPECT_EQ(execution.info.at("status"), "registered");
+}
+
+// ============================================================================
+// 差分对齐：Final 执行器注册上下文并提取层
+// 对齐 Rust: meta_model_final_executor_registers_context_and_extracts_layers
+// 参考行为：diagnostics.model_name=="test_final", variable_count==3,
+//           constraint_count==6, bin_count==1
+// ============================================================================
+
+TEST(Bpp3dMetaModel, FinalExecutorExtractsLayers) {
+    BinLayer layer_a;
+    layer_a.iteration = 0;
+    layer_a.from = "seed-a";
+    layer_a.depth = 1.0;
+
+    BinLayer layer_b;
+    layer_b.iteration = 0;
+    layer_b.from = "seed-b";
+    layer_b.depth = 2.0;
+
+    MockFinalExecutor executor("test_final", 5.0);
+
+    auto execution = executor.execute({layer_a, layer_b}, {"i0"});
+
+    // 差分对齐断言（与 Rust 参考一致）
+    ASSERT_TRUE(execution.diagnostics.has_value());
+    EXPECT_EQ(execution.diagnostics->model_name, "test_final");
+    EXPECT_EQ(execution.diagnostics->variable_count, 3u);  // 2 layers + 1 bin
+    EXPECT_EQ(execution.diagnostics->constraint_count, 2u);  // 1 demand * 2
+    EXPECT_EQ(execution.diagnostics->bin_count, 1u);
+    EXPECT_EQ(execution.layers.size(), 2u);
+    EXPECT_EQ(execution.layers[0].from, "seed-a");
+    EXPECT_EQ(execution.layers[1].from, "seed-b");
+}
+
+// ============================================================================
+// 差分对齐：NoopMetaModelSolverBackend 返回默认结果
+// 对齐 Rust: NoopMetaModelSolverBackend
+// ============================================================================
+
+TEST(Bpp3dMetaModel, NoopSolverBackendReturnsDefaults) {
+    NoopMetaModelSolverBackend backend;
+
+    EXPECT_EQ(backend.name(), "noop");
+
+    MetaModelExecutionDiagnostics diag;
+    diag.model_name = "test";
+
+    auto rmp_result = backend.solve_rmp(diag);
+    EXPECT_FALSE(rmp_result.objective.has_value());
+
+    auto final_result = backend.solve_final(diag);
+    EXPECT_FALSE(final_result.objective.has_value());
+}
+
+// ============================================================================
+// 差分对齐：列生成算法与 MetaModel 执行器集成
+// 验证 ColumnGenerationAlgorithm + MockRmpExecutor 端到端
+// ============================================================================
+
+TEST(Bpp3dMetaModel, AlgorithmWithExecutorIntegration) {
+    ColumnGenerationConfig config;
+    config.max_candidates_per_iteration = 8;
+    config.iteration_limit = 3;
+
+    ColumnGenerationAlgorithm algorithm(config);
+    algorithm.add_generator(std::make_shared<MockLayerGenerator>());
+
+    // 执行 2 次迭代
+    algorithm.generate_once({"i0"}, {});
+    algorithm.generate_once({"i1"}, {});
+
+    // 用 MockRmpExecutor 获取影子价格
+    MockRmpExecutor rmp("integration_test",
+        {{"item:i0", 1.0}, {"item:i1", 2.0}}, 5.0);
+
+    auto layers = algorithm.active_layers();
+    auto execution = rmp.execute(layers, {"i0", "i1"});
+
+    // 验证执行器与算法状态一致
+    EXPECT_EQ(execution.diagnostics->layer_count, layers.size());
+    EXPECT_EQ(execution.diagnostics->demand_count, 2u);
+    EXPECT_TRUE(execution.objective.has_value());
+    EXPECT_DOUBLE_EQ(*execution.objective, 5.0);
+}
