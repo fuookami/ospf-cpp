@@ -1225,3 +1225,93 @@ TEST(Bpp3dDomain, CylinderShapeContractHasCylinder) {
     // 当前 C++ Item 无 shape_spec_override，验证基础属性
     EXPECT_GT(item.dimensions.volume(), 0.0);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：cargo_metadata.rs 测试 / Cargo metadata differential tests
+// 对齐 Rust bpp3d/domain/item/model/tests/cargo_metadata.rs (5 tests)
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+// 对齐 Rust: cargo_attribute_key_identity_and_equality
+// 参考行为：CargoAttributeKey("hazardous")==CargoAttributeKey("hazardous"),
+//           CargoAttributeKey("hazardous")!=CargoAttributeKey("fragile")
+TEST(Bpp3dDomain, CargoAttributeKeyIdentityAndEquality) {
+    CargoAttributeKey key_a{"hazardous", ""};
+    CargoAttributeKey key_b{"hazardous", ""};
+    CargoAttributeKey key_c{"fragile", ""};
+
+    EXPECT_EQ(key_a, key_b);
+    EXPECT_NE(key_a, key_c);
+}
+
+// 对齐 Rust: cargo_attribute_key_ordering
+// 参考行为：CargoAttributeKey("aaa") < CargoAttributeKey("bbb")
+TEST(Bpp3dDomain, CargoAttributeKeyOrdering) {
+    CargoAttributeKey key_a{"aaa", ""};
+    CargoAttributeKey key_b{"bbb", ""};
+
+    EXPECT_TRUE(key_a < key_b);
+}
+
+// 对齐 Rust: material_with_cargo_attribute
+// 参考行为：material.cargo.is_some()==true, material.cargo.unwrap().key=="hazardous"
+//           material.key().no=="MAT-CARGO", material.key().manufacturer=="Acme"
+TEST(Bpp3dDomain, MaterialWithCargoAttribute) {
+    Material mat;
+    mat.no = "MAT-CARGO";
+    mat.material_type = MaterialType::RawMaterial;
+    mat.name = "Cargo Material";
+    mat.manufacturer = "Acme";
+    mat.supplier = "Global Supply";
+    mat.warehouse = "WH-1";
+    mat.weight = 1.0;
+    mat.cargo = CargoAttributeKey{"hazardous", ""};
+
+    auto key = mat.key();
+    EXPECT_EQ(key.no, "MAT-CARGO");
+    ASSERT_TRUE(key.manufacturer.has_value());
+    EXPECT_EQ(*key.manufacturer, "Acme");
+    ASSERT_TRUE(key.supplier.has_value());
+    EXPECT_EQ(*key.supplier, "Global Supply");
+    ASSERT_TRUE(mat.cargo.has_value());
+    EXPECT_EQ(mat.cargo->no, "hazardous");
+}
+
+// 对齐 Rust: material_key_keeps_manufacturer_and_supplier_identity
+// 参考行为：同一 no 但不同 manufacturer 的 MaterialKey 不相等
+TEST(Bpp3dDomain, MaterialKeyKeepsManufacturerAndSupplierIdentity) {
+    Material from_a;
+    from_a.no = "MAT-SAME";
+    from_a.material_type = MaterialType::RawMaterial;
+    from_a.manufacturer = "Maker-A";
+    from_a.supplier = "Supplier-A";
+    from_a.weight = 1.0;
+
+    Material from_b;
+    from_b.no = "MAT-SAME";
+    from_b.material_type = MaterialType::RawMaterial;
+    from_b.manufacturer = "Maker-B";
+    from_b.supplier = "Supplier-A";
+    from_b.weight = 1.0;
+
+    auto key_a = from_a.key();
+    auto key_b = from_b.key();
+
+    EXPECT_NE(key_a, key_b);
+    ASSERT_TRUE(key_a.manufacturer.has_value());
+    EXPECT_EQ(*key_a.manufacturer, "Maker-A");
+    ASSERT_TRUE(key_b.manufacturer.has_value());
+    EXPECT_EQ(*key_b.manufacturer, "Maker-B");
+}
+
+// 对齐 Rust: package_attribute_with_cargo_attribute
+// 参考行为：default().cargo_attribute.is_none()==true;
+//           attr.cargo_attribute=Some(CargoAttributeKey("fragile")) → is_some()==true
+TEST(Bpp3dDomain, PackageAttributeWithCargoAttribute) {
+    PackageAttribute attr;
+    EXPECT_FALSE(attr.cargo_attribute.has_value());
+
+    attr.cargo_attribute = CargoAttributeKey{"fragile", ""};
+    ASSERT_TRUE(attr.cargo_attribute.has_value());
+    EXPECT_EQ(attr.cargo_attribute->no, "fragile");
+}

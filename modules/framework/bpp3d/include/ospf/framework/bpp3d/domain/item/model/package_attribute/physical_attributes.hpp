@@ -20,6 +20,18 @@ namespace ospf::framework::bpp3d {
         std::string no;
         /// 名称 / Name
         std::string name;
+
+        [[nodiscard]] bool operator==(const CargoAttributeKey& other) const noexcept {
+            return no == other.no && name == other.name;
+        }
+
+        [[nodiscard]] bool operator!=(const CargoAttributeKey& other) const noexcept {
+            return !(*this == other);
+        }
+
+        [[nodiscard]] bool operator<(const CargoAttributeKey& other) const noexcept {
+            return no < other.no || (no == other.no && name < other.name);
+        }
     };
 
     // ============================================================================
