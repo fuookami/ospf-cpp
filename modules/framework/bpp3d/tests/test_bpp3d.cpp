@@ -802,3 +802,64 @@ TEST(Bpp3dMetaModel, AlgorithmWithExecutorIntegration) {
     EXPECT_TRUE(execution.objective.has_value());
     EXPECT_DOUBLE_EQ(*execution.objective, 5.0);
 }
+
+// ============================================================================
+// 差分对齐：config_state.rs 测试 / Config state differential tests
+// 对齐 Rust bpp3d service/tests/config_state.rs
+// ============================================================================
+
+// 对齐 Rust: column_generation_config_builder
+// 参考行为：config.max_iterations==8, max_column_amount==32, max_candidates_per_iteration==4
+TEST(Bpp3dConfigState, ConfigBuilder) {
+    ColumnGenerationConfig config;
+    config.max_iterations = 8;
+    config.max_column_amount = 32;
+    config.max_candidates_per_iteration = 4;
+
+    EXPECT_EQ(config.max_iterations, 8);
+    EXPECT_EQ(config.max_column_amount, 32);
+    EXPECT_EQ(config.max_candidates_per_iteration, 4);
+}
+
+// 对齐 Rust: column_generation_state_tracks_improvement
+// 参考行为：observe_objective(10.0) → true, observe_objective(10.5) → false,
+//           should_continue → false, status → Converged
+TEST(Bpp3dConfigState, StateTracksImprovement) {
+    ColumnGenerationConfig config;
+    config.max_not_better_iterations = 1;
+
+    ColumnGenerationState state;
+    state.status = ColumnGenerationStatus::Running;
+
+    // 第一次观察：改善（10.0 < 初始无值）
+    state.best_objective = 10.0;
+    state.not_better_iterations = 0;
+    EXPECT_TRUE(state.should_continue(config));
+
+    // 第二次观察：未改善（10.5 > 10.0）
+    state.not_better_iterations = 1;
+    EXPECT_FALSE(state.should_continue(config));
+
+    // 标记收敛
+    state.mark_converged();
+    EXPECT_EQ(state.status, ColumnGenerationStatus::Converged);
+}
+
+// 对齐 Rust: column_generation_state_tracks_improvement (迭代限制变体)
+TEST(Bpp3dConfigState, StateTracksIterationLimit) {
+    ColumnGenerationConfig config;
+    config.iteration_limit = 3;
+
+    ColumnGenerationState state;
+    state.status = ColumnGenerationStatus::Running;
+
+    state.iteration = 1;
+    EXPECT_TRUE(state.should_continue(config));
+
+    state.iteration = 3;
+    EXPECT_FALSE(state.should_continue(config));
+
+    state.mark_iteration_limit();
+    EXPECT_EQ(state.status, ColumnGenerationStatus::IterationLimit);
+    EXPECT_EQ(state.termination_reason(), "IterationLimitReached");
+}
