@@ -1398,3 +1398,214 @@ TEST(GanttInfra, TimeRangeDifferenceNoOverlapBefore) {
     ASSERT_EQ(result.size(), 1u);
     EXPECT_EQ(result[0], base);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：infrastructure/time_range.rs 测试 (25 tests — 第 2 批：20 个)
+// 对齐 Rust gantt/infrastructure/time_range.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+// 对齐 Rust: test_difference_no_overlap_after
+TEST(GanttInfra, TimeRangeDifferenceNoOverlapAfter) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(20, 24);
+    auto result = base.difference(other);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], base);
+}
+
+// 对齐 Rust: test_difference_with_many_multiple_exclusions
+TEST(GanttInfra, TimeRangeDifferenceWithManyMultipleExclusions) {
+    auto base = TimeRange::create(8, 18);
+    std::vector<TimeRange> others = {TimeRange::create(10, 12), TimeRange::create(14, 16)};
+    auto result = base.difference_with_many(others);
+    ASSERT_EQ(result.size(), 3u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 10));
+    EXPECT_EQ(result[1], TimeRange::create(12, 14));
+    EXPECT_EQ(result[2], TimeRange::create(16, 18));
+}
+
+// 对齐 Rust: test_difference_with_many_overlapping_exclusions
+TEST(GanttInfra, TimeRangeDifferenceWithManyOverlappingExclusions) {
+    auto base = TimeRange::create(8, 18);
+    std::vector<TimeRange> others = {TimeRange::create(12, 14), TimeRange::create(13, 15)};
+    auto result = base.difference_with_many(others);
+    ASSERT_EQ(result.size(), 2u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 12));
+    EXPECT_EQ(result[1], TimeRange::create(15, 18));
+}
+
+// 对齐 Rust: test_find_no_overlap
+TEST(GanttInfra, TimeRangeFindNoOverlap) {
+    std::vector<TimeRange> calendar = {
+        TimeRange::create(0, 10),   // day 0 08:00-18:00
+        TimeRange::create(24, 34),  // day 1 08:00-18:00
+    };
+    auto result = find(calendar, TimeRange::create(11, 23));  // day 0 19:00 - day 1 07:00
+    EXPECT_TRUE(result.empty());
+}
+
+// 对齐 Rust: test_find_single_result
+TEST(GanttInfra, TimeRangeFindSingleResult) {
+    std::vector<TimeRange> calendar = {
+        TimeRange::create(0, 10),
+        TimeRange::create(24, 34),
+    };
+    auto result = find(calendar, TimeRange::create(-1, 23));  // day 0 07:00 - day 1 07:00
+    ASSERT_EQ(result.size(), 1u);
+}
+
+// 对齐 Rust: test_find_two_results
+TEST(GanttInfra, TimeRangeFindTwoResults) {
+    std::vector<TimeRange> calendar = {
+        TimeRange::create(0, 10),
+        TimeRange::create(24, 34),
+    };
+    auto result = find(calendar, TimeRange::create(-1, 35));
+    ASSERT_EQ(result.size(), 2u);
+}
+
+// 对齐 Rust: test_find_from
+TEST(GanttInfra, TimeRangeFindFrom) {
+    std::vector<TimeRange> calendar = {
+        TimeRange::create(0, 10),
+        TimeRange::create(24, 34),
+    };
+    // find_from(day 1 19:00=35) -> 0 results
+    auto result1 = find_from(calendar, 35.0);
+    EXPECT_TRUE(result1.empty());
+    // find_from(day 1 07:00=23) -> 1 result (second range)
+    auto result2 = find_from(calendar, 23.0);
+    EXPECT_EQ(result2.size(), 1u);
+    // find_from(day 1 09:00=25) -> 1 result (second range)
+    auto result3 = find_from(calendar, 25.0);
+    EXPECT_EQ(result3.size(), 1u);
+}
+
+// 对齐 Rust: test_find_from_next_day
+TEST(GanttInfra, TimeRangeFindFromNextDay) {
+    std::vector<TimeRange> calendar = {
+        TimeRange::create(0, 10),
+        TimeRange::create(24, 34),
+    };
+    // find_from(day -1 09:00=-15) -> 2 results
+    auto result = find_from(calendar, -15.0);
+    EXPECT_EQ(result.size(), 2u);
+}
+
+// 对齐 Rust: test_merge_overlapping
+TEST(GanttInfra, TimeRangeMergeOverlapping) {
+    std::vector<TimeRange> ranges = {
+        TimeRange::create(8, 12), TimeRange::create(10, 14), TimeRange::create(16, 18)
+    };
+    auto result = merge(ranges);
+    ASSERT_EQ(result.size(), 2u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 14));
+    EXPECT_EQ(result[1], TimeRange::create(16, 18));
+}
+
+// 对齐 Rust: test_merge_adjacent
+TEST(GanttInfra, TimeRangeMergeAdjacent) {
+    std::vector<TimeRange> ranges = {
+        TimeRange::create(8, 10), TimeRange::create(10, 12)
+    };
+    auto result = merge(ranges);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 12));
+}
+
+// 对齐 Rust: test_contains_instant
+TEST(GanttInfra, TimeRangeContainsInstant) {
+    auto range = TimeRange::create(8, 18);
+    EXPECT_TRUE(range.contains_instant(8));   // start included
+    EXPECT_TRUE(range.contains_instant(12));
+    EXPECT_FALSE(range.contains_instant(18)); // end excluded (half-open)
+    EXPECT_FALSE(range.contains_instant(7));
+}
+
+// 对齐 Rust: test_intersection
+TEST(GanttInfra, TimeRangeIntersection) {
+    auto a = TimeRange::create(8, 14);
+    auto b = TimeRange::create(10, 18);
+    auto result = a.intersection(b);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, TimeRange::create(10, 14));
+
+    // No intersection
+    auto c = TimeRange::create(18, 20);
+    EXPECT_FALSE(a.intersection(c).has_value());
+}
+
+// 对齐 Rust: test_continuous_before_and_after
+TEST(GanttInfra, TimeRangeContinuousBeforeAndAfter) {
+    auto a = TimeRange::create(8, 12);
+    auto b = TimeRange::create(12, 16);
+    EXPECT_TRUE(a.continuous_before(b));
+    EXPECT_TRUE(b.continuous_after(a));
+    EXPECT_TRUE(a.continuous_with(b));
+    EXPECT_TRUE(b.continuous_with(a)); // continuous_with is bidirectional: a.end==b.start
+}
+
+// 对齐 Rust: test_split_at
+TEST(GanttInfra, TimeRangeSplitAt) {
+    auto range = TimeRange::create(8, 16);
+    auto result = range.split_at({10.0, 12.0, 14.0});
+    ASSERT_EQ(result.size(), 4u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 10));
+    EXPECT_EQ(result[1], TimeRange::create(10, 12));
+    EXPECT_EQ(result[2], TimeRange::create(12, 14));
+    EXPECT_EQ(result[3], TimeRange::create(14, 16));
+}
+
+// 对齐 Rust: test_shift
+TEST(GanttInfra, TimeRangeShift) {
+    auto range = TimeRange::create(8, 18);
+    auto shifted = range.shift(2.0);
+    EXPECT_EQ(shifted, TimeRange::create(10, 20));
+}
+
+// 对齐 Rust: test_front_at_and_back_at
+TEST(GanttInfra, TimeRangeFrontAtAndBackAt) {
+    std::vector<TimeRange> ranges = {
+        TimeRange::create(8, 12), TimeRange::create(14, 18)
+    };
+    // frontAt(0) = gap between ranges[0] and ranges[1] (index 0 = first gap)
+    auto front = front_at(ranges, 0);
+    ASSERT_TRUE(front.has_value());
+    EXPECT_EQ(*front, TimeRange::create(12, 14));
+    // backAt(0) = same gap
+    auto back = back_at(ranges, 0);
+    ASSERT_TRUE(back.has_value());
+    EXPECT_EQ(*back, TimeRange::create(12, 14));
+}
+
+// 对齐 Rust: test_empty_range_operations
+TEST(GanttInfra, TimeRangeEmptyRangeOperations) {
+    auto empty = TimeRange::empty();
+    EXPECT_TRUE(empty.is_empty());
+    auto split = empty.split_at({10.0});
+    ASSERT_EQ(split.size(), 1u);
+    EXPECT_TRUE(split[0].is_empty());
+}
+
+// 对齐 Rust: test_default_is_empty
+TEST(GanttInfra, TimeRangeDefaultIsEmpty) {
+    TimeRange default_range;
+    EXPECT_TRUE(default_range.is_empty());
+}
+
+// 对齐 Rust: test_difference_with_many_empty_input
+TEST(GanttInfra, TimeRangeDifferenceWithManyEmptyInput) {
+    auto base = TimeRange::create(8, 18);
+    std::vector<TimeRange> empty_others;
+    auto result = base.difference_with_many(empty_others);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], base);
+}
+
+// 对齐 Rust: test_full_range_contains_distant_past
+TEST(GanttInfra, TimeRangeFullRangeContainsDistantPast) {
+    auto full = TimeRange::full();
+    EXPECT_TRUE(full.contains_instant(-1e17));
+    EXPECT_FALSE(full.contains_instant(1e18)); // half-open: excludes end
+}
