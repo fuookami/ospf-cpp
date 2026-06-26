@@ -45,6 +45,9 @@ namespace ospf::framework::bpp3d {
     // 对应 Rust PackageStackingInput
     // ============================================================================
 
+    // forward declaration for bottom_item reference
+    struct PackageAttribute;
+
     /// 堆叠输入 / Stacking input
     /// 对应 Rust PackageStackingInput
     struct PackageStackingInput {
@@ -62,6 +65,16 @@ namespace ospf::framework::bpp3d {
         int item_orientation = 0;
         /// 项目朝向是否启用 / Whether item orientation is enabled
         bool item_orientation_enabled = false;
+        /// 项目朝向是否在空间中启用 / Whether item orientation is enabled at space
+        bool item_orientation_enabled_at_space = true;
+        /// 空间宽度 / Space width
+        double space_width = 0.0;
+        /// 空间高度 / Space height
+        double space_height = 0.0;
+        /// 空间深度 / Space depth
+        double space_depth = 0.0;
+        /// 底部包装属性（非拥有指针） / Bottom item package attribute (non-owning pointer)
+        const PackageAttribute* bottom_item = nullptr;
     };
 
     // ============================================================================

@@ -218,6 +218,58 @@ namespace ospf::framework::bpp3d {
             return true;
         }
 
+        /// 判断堆叠是否启用 / Check whether stacking is enabled
+        /// 对应 Rust PackageAttribute::enabled_stacking_on
+        [[nodiscard]] bool enabled_stacking_on(const PackageStackingInput& input) const {
+            // bottom_only 检查
+            if (input.bottom_item && bottom_only && !input.bottom_item->bottom_only) {
+                return false;
+            }
+            // 底部朝向检查
+            if (input.bottom_item && !input.bottom_item->top_flat && !input.bottom_orientation_enabled
+                && package_category() != PackageCategory::Filler) {
+                return false;
+            }
+            // 朝向层限制检查
+            if (!enabled_orientation_on_layer(
+                    static_cast<Orientation>(input.item_orientation),
+                    input.layer,
+                    input.item_orientation_enabled,
+                    input.item_orientation_enabled_at_space,
+                    input.space_width, input.space_height, input.space_depth)) {
+                return false;
+            }
+            return true;
+        }
+
+        /// 判断朝向层是否允许 / Check whether orientation on layer is allowed
+        /// 对应 Rust PackageAttribute::enabled_orientation_on_layer
+        [[nodiscard]] bool enabled_orientation_on_layer(
+            Orientation orientation,
+            std::size_t layer,
+            bool orientation_enabled,
+            bool orientation_enabled_at_space,
+            double space_width, double space_height, double space_depth) const
+        {
+            if (!orientation_enabled_at_space) return false;
+            PackageOrientationRuleInput input;
+            input.orientation = orientation;
+            input.space_width = space_width;
+            input.space_height = space_height;
+            input.space_depth = space_depth;
+            if (!enabled_orientation_by_rule(input)) return false;
+            if (orientation_enabled) return true;
+            // 层限制：side_on_top_layer / lie_on_top_layer
+            auto cat = orientation_category(orientation);
+            if (cat == OrientationCategory::Side && enabled_side_on_top()) {
+                return layer <= side_on_top_layer;
+            }
+            if (cat == OrientationCategory::Lie && enabled_lie_on_top()) {
+                return layer <= lie_on_top_layer;
+            }
+            return true;
+        }
+
     private:
         [[nodiscard]] static bool check_orientation_rule(
             const PackageOrientationRule& rule,
