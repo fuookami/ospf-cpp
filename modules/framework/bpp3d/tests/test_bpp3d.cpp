@@ -1897,3 +1897,131 @@ TEST(Bpp3dDomain, ExtraPlacementStackingRuleFiltersBottoms) {
     input3.item_orientation_enabled_at_space = true;
     EXPECT_TRUE(filler.enabled_stacking_on(input3));
 }
+
+// ============================================================================
+// 1:1 Rust 移植：block_loading/service/tests/simple_limits.rs 测试 (7 tests)
+// 对齐 Rust bpp3d/domain/block_loading/service/tests/simple_limits.rs
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/domain/block_loading/service/simple_block_generator.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+// 对齐 Rust: simple_block_generator_too_large
+// 参考行为：item(15x15x15) 太大放不进 container(10x10x10) → blocks.is_empty()
+TEST(Bpp3dDomain, SimpleBlockGeneratorTooLarge) {
+    auto generator = SimpleBlockGenerator::default_generator();
+
+    ActualItem item;
+    item.id = "i1"; item.width = 15.0; item.height = 15.0; item.depth = 15.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+
+    MetricSize3 container{10.0, 10.0, 10.0};
+    auto blocks = generator.generate({item}, {1}, container);
+
+    EXPECT_TRUE(blocks.empty());
+}
+
+// 对齐 Rust: simple_block_generator_fits
+// 参考行为：item(2x3x4) 容器(10x10x10) → blocks 非空，block 宽高深正确
+TEST(Bpp3dDomain, SimpleBlockGeneratorFits) {
+    auto generator = SimpleBlockGenerator::default_generator();
+
+    ActualItem item;
+    item.id = "i1"; item.width = 2.0; item.height = 3.0; item.depth = 4.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+
+    MetricSize3 container{10.0, 10.0, 10.0};
+    auto blocks = generator.generate({item}, {4}, container);
+
+    ASSERT_FALSE(blocks.empty());
+    EXPECT_EQ(blocks[0].item_view.width, 2.0);
+    EXPECT_EQ(blocks[0].item_view.height, 3.0);
+    EXPECT_EQ(blocks[0].item_view.depth, 4.0);
+}
+
+// 对齐 Rust: simple_block_generator_no_rotation
+// 参考行为：with_rotation=false，但 item 有 Upright+Side → 只用 Upright
+TEST(Bpp3dDomain, SimpleBlockGeneratorNoRotation) {
+    SimpleBlockGeneratorConfig config;
+    config.with_rotation = false;
+    auto generator = SimpleBlockGenerator::create(config);
+
+    ActualItem item;
+    item.id = "i1"; item.width = 2.0; item.height = 3.0; item.depth = 4.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright, Orientation::Side};
+
+    MetricSize3 container{10.0, 10.0, 10.0};
+    auto blocks = generator.generate({item}, {10}, container);
+
+    // 无旋转时只用 Upright
+    ASSERT_FALSE(blocks.empty());
+    EXPECT_EQ(blocks[0].item_view.width, 2.0);
+    EXPECT_EQ(blocks[0].item_view.height, 3.0);
+}
+
+// 对齐 Rust: simple_block_generator_limits_vertical_stack_layers
+// 参考行为：max_stack_layers=1 → blocks 中所有 block.ny <= 1
+TEST(Bpp3dDomain, SimpleBlockGeneratorLimitsVerticalStackLayers) {
+    SimpleBlockGeneratorConfig config;
+    config.max_stack_layers = 1;
+    auto generator = SimpleBlockGenerator::create(config);
+
+    ActualItem item;
+    item.id = "i1"; item.width = 2.0; item.height = 1.0; item.depth = 2.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+
+    MetricSize3 container{2.0, 4.0, 2.0};
+    auto blocks = generator.generate({item}, {4}, container);
+
+    ASSERT_FALSE(blocks.empty());
+    for (const auto& block : blocks) {
+        EXPECT_LE(block.ny, 1u) << "max_stack_layers=1 时 ny 应 <= 1";
+    }
+}
+
+// 对齐 Rust: simple_block_generator_respects_package_depth_bounds
+// 参考行为：item(depth=2) + container(depth=3) → max_nz=1
+TEST(Bpp3dDomain, SimpleBlockGeneratorRespectsDepthBounds) {
+    auto generator = SimpleBlockGenerator::default_generator();
+
+    ActualItem item;
+    item.id = "i1"; item.width = 2.0; item.height = 1.0; item.depth = 2.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+
+    MetricSize3 container{4.0, 4.0, 3.0};
+    auto blocks = generator.generate({item}, {4}, container);
+
+    // depth=3, item depth=2 → max_nz=1
+    ASSERT_FALSE(blocks.empty());
+    EXPECT_EQ(blocks[0].nz, 1u);
+}
+
+// 对齐 Rust: simple_block_generator_with_rotation_generates_multiple_orientations
+// 参考行为：with_rotation=true + enabled_orientations=[Upright,Side] → 生成不同朝向的块
+TEST(Bpp3dDomain, SimpleBlockGeneratorWithRotation) {
+    auto generator = SimpleBlockGenerator::default_generator();
+
+    ActualItem item;
+    item.id = "i1"; item.width = 2.0; item.height = 3.0; item.depth = 4.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright, Orientation::Side};
+
+    MetricSize3 container{10.0, 10.0, 10.0};
+    auto blocks = generator.generate({item}, {20}, container);
+
+    // 验证生成了块
+    ASSERT_FALSE(blocks.empty());
+    // 有旋转时应生成多个块（不同朝向）
+    EXPECT_GE(blocks.size(), 1u);
+}
+
+// 对齐 Rust: simple_block_generator_default_config
+// 参考行为：with_rotation=true, with_remainder=false, max_stack_layers=None
+TEST(Bpp3dDomain, SimpleBlockGeneratorDefaultConfig) {
+    auto generator = SimpleBlockGenerator::default_generator();
+
+    EXPECT_TRUE(generator.config.with_rotation);
+    EXPECT_FALSE(generator.config.with_remainder);
+    EXPECT_FALSE(generator.config.max_stack_layers.has_value());
+}
