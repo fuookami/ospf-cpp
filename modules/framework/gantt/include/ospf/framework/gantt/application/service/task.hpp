@@ -1,3 +1,5 @@
 #pragma once
-/// Gantt application service/task /// 1:1 对应 Rust gantt/application/service/task.rs
-namespace ospf::framework::gantt { /* placeholder */ }
+/// gantt/task.hpp
+namespace ospf::framework::gantt {
+    struct Task { /* stub */ };
+}

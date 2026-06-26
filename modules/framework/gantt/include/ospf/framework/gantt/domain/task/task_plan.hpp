@@ -1,3 +1,5 @@
 #pragma once
-/// Gantt domain task/task_plan /// 1:1 对应 Rust gantt/domain/task/task_plan.rs
-namespace ospf::framework::gantt { /* placeholder */ }
+/// gantt/task_plan.hpp
+namespace ospf::framework::gantt {
+    struct TaskPlan { /* stub */ };
+}

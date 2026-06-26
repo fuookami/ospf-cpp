@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/better_layer_maximization /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/limits/better_layer_maximization.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 更好层最大化 / Better layer maximization
+namespace ospf::framework::bpp3d { struct BetterLayerMaximization { double weight = 1.0; }; }

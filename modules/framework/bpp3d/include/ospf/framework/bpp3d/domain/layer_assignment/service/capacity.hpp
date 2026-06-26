@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/capacity /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/capacity.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ²ã¸³ÖµÈÝÁ¿ / Layer assignment capacity
+namespace ospf::framework::bpp3d { struct LayerCapacity { double max_depth = 0.0; double used_depth = 0.0; [[nodiscard]] double remaining() const { return max_depth - used_depth; } }; }

@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/bin_capacity_constraint /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/limits/bin_capacity_constraint.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ÏäÈÝÁ¿Ô¼Êø / Bin capacity constraint
+namespace ospf::framework::bpp3d { struct BinCapacityConstraint { double max_volume = 0.0; double max_weight = 0.0; }; }

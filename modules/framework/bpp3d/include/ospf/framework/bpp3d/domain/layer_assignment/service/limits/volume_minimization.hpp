@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/volume_minimization /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/limits/volume_minimization.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 体积最小化 / Volume minimization
+namespace ospf::framework::bpp3d { struct VolumeMinimization { double weight = 1.0; }; }

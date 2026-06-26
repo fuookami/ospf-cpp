@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/block_loading/service/tests/simple_limits /// 1:1 瀵瑰簲 Rust bpp3d/domain/block_loading/service/tests/simple_limits.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 简单限制测试 / Simple limits tests
+/// 1:1 对应 Rust bpp3d/domain/block_loading/service/tests/simple_limits.rs

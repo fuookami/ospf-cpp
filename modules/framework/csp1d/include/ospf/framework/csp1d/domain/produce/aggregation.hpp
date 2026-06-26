@@ -1,3 +1,5 @@
 #pragma once
-/// CSP1D domain/produce/aggregation /// 1:1 对应 Rust csp1d/domain/produce/aggregation.rs
-namespace ospf::framework::csp1d { /* placeholder */ }
+/// csp1d/aggregation.hpp
+namespace ospf::framework::csp1d {
+    struct Aggregation { /* stub */ };
+}

@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/model/solution_extractor /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/model/solution_extractor.rs
+/// ½âÌáÈ¡Æ÷ / Solution extractor
 namespace ospf::framework::bpp3d { /* placeholder */ }

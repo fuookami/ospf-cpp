@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/deferred /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/limits/deferred.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ÑÓ³ÙÔ¼Êø / Deferred constraint
+namespace ospf::framework::bpp3d { struct DeferredConstraint { bool active = false; }; }

@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain/layer_assignment/model /// 1:1 对应 Rust bpp3d/domain/layer_assignment/model.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// Layer assignment model �ۺ�ͷ
+#include <ospf/framework/bpp3d/domain/layer_assignment/model/component.hpp>
+#include <ospf/framework/bpp3d/domain/layer_assignment/model/expression_array.hpp>
+#include <ospf/framework/bpp3d/domain/layer_assignment/model/solution_extractor.hpp>

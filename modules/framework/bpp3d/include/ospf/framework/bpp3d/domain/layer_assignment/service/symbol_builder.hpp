@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/symbol_builder /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/symbol_builder.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ·ûºÅ¹¹½¨Æ÷ / Symbol builder
+namespace ospf::framework::bpp3d { struct SymbolBuilder { int variable_count = 0; int constraint_count = 0; }; }

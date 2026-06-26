@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain/packing/service/tests/packing_result /// 1:1 对应 Rust bpp3d/domain/packing/service/tests/packing_result.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// bpp3d/packing_result.hpp
+namespace ospf::framework::bpp3d {
+    struct PackingResult { /* stub */ };
+}

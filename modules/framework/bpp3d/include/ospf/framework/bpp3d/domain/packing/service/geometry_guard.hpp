@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain/packing/service/geometry_guard /// 1:1 对应 Rust bpp3d/domain/packing/service/geometry_guard.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// bpp3d/geometry_guard.hpp
+namespace ospf::framework::bpp3d {
+    struct GeometryGuard { /* stub */ };
+}

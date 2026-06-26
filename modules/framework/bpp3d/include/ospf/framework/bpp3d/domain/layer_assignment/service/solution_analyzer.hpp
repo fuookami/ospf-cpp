@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/solution_analyzer /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/solution_analyzer.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ½â·ÖÎöÆ÷ / Solution analyzer
+namespace ospf::framework::bpp3d { struct SolutionAnalyzer { int analyzed_count = 0; }; }

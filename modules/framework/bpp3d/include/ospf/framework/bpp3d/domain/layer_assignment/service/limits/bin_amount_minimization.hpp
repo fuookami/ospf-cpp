@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/bin_amount_minimization /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/limits/bin_amount_minimization.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 箱数量最小化 / Bin amount minimization
+namespace ospf::framework::bpp3d { struct BinAmountMinimization { double weight = 1.0; }; }

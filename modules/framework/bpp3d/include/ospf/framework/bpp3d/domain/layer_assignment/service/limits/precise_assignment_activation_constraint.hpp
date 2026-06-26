@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/precise_assignment_activation_constraint /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/limits/precise_assignment_activation_constraint.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 精确赋值激活约束 / Precise assignment activation constraint
+namespace ospf::framework::bpp3d { struct PreciseAssignmentActivationConstraint { bool enabled = true; }; }

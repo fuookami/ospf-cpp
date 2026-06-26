@@ -1,3 +1,5 @@
 #pragma once
-/// Gantt domain produce/model_production_task /// 1:1 对应 Rust gantt/domain/produce/model_production_task.rs
-namespace ospf::framework::gantt { /* placeholder */ }
+/// gantt/model_production_task.hpp
+namespace ospf::framework::gantt {
+    struct ModelProductionTask { /* stub */ };
+}

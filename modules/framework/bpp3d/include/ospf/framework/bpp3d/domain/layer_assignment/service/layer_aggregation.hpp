@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/layer_aggregation /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/layer_aggregation.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ²ã¾ÛºÏ / Layer aggregation
+namespace ospf::framework::bpp3d { struct LayerAggregation { int layer_count = 0; double total_depth = 0.0; }; }

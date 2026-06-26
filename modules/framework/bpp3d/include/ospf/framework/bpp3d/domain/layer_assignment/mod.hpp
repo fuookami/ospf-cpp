@@ -1,3 +1,4 @@
 #pragma once
-/// BPP3D domain/layer_assignment/mod /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/mod.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// Layer assignment Ä£¿é¾ÛºÏÍ·
+#include <ospf/framework/bpp3d/domain/layer_assignment/model.hpp>
+#include <ospf/framework/bpp3d/domain/layer_assignment/service.hpp>

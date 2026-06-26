@@ -1,3 +1,5 @@
 #pragma once
-/// CSP1D domain/cutting_plan_generation/model /// 1:1 对应 Rust csp1d/domain/cutting_plan_generation/model.rs
-namespace ospf::framework::csp1d { /* placeholder */ }
+/// csp1d/model.hpp
+namespace ospf::framework::csp1d {
+    struct Model { /* stub */ };
+}

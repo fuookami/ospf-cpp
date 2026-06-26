@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/iterative_context /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/iterative_context.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 迭代上下文 / Iterative context
+namespace ospf::framework::bpp3d { struct IterativeLayerAssignmentContext { int iteration = 0; bool converged = false; }; }

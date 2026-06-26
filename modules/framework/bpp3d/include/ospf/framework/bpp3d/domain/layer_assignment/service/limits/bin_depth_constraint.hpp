@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/limits/bin_depth_constraint /// 1:1 å¯¹åº” Rust bpp3d/domain/layer_assignment/service/limits/bin_depth_constraint.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// ÏäÉî¶ÈÔ¼Êø / Bin depth constraint
+namespace ospf::framework::bpp3d { struct BinDepthConstraint { double max_depth = 0.0; }; }

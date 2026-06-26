@@ -1,3 +1,5 @@
 #pragma once
-/// Gantt domain resource/model_resource_trait /// 1:1 对应 Rust gantt/domain/resource/model_resource_trait.rs
-namespace ospf::framework::gantt { /* placeholder */ }
+/// gantt/model_resource_trait.hpp
+namespace ospf::framework::gantt {
+    struct ModelResourceTrait { /* stub */ };
+}

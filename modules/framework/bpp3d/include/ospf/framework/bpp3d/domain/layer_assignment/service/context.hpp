@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/layer_assignment/service/context /// 1:1 瀵瑰簲 Rust bpp3d/domain/layer_assignment/service/context.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// 层赋值上下文 / Layer assignment context
+namespace ospf::framework::bpp3d { struct LayerAssignmentContext { int iteration = 0; int max_iterations = 10; }; }

@@ -1,3 +1,3 @@
 #pragma once
-/// BPP3D domain/block_loading/service/tests /// 1:1 瀵瑰簲 Rust bpp3d/domain/block_loading/service/tests.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// Block loading tests 聚合头 / Block loading tests aggregation header
+/// 1:1 对应 Rust bpp3d/domain/block_loading/service/tests.rs
