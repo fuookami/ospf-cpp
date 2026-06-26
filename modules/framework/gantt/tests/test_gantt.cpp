@@ -2066,3 +2066,126 @@ TEST(GanttDomain, LabelDominance) {
     EXPECT_TRUE(label_dominates(label_a, label_b));
     EXPECT_FALSE(label_dominates(label_b, label_a));
 }
+
+// ============================================================================
+// 1:1 Rust 移植：bunch_compilation/context.rs 测试 (9 tests)
+// 对齐 Rust gantt/domain/bunch_compilation/context.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/bunch_compilation/context.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_basic_bunch_compilation_context_register
+// 参考行为：new(2, ["exec_1"], false) → column_count()==0
+TEST(GanttDomain, BasicBunchCompilationContextRegister) {
+    auto ctx = BasicBunchCompilationContext::create(2, {"exec_1"}, false);
+    EXPECT_EQ(ctx.column_count(), 0u);
+    EXPECT_EQ(ctx.task_count(), 2u);
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_add_columns
+// 参考行为：add_columns(0, [BunchEntry{...}]) → added_indices==[0], column_count==1
+TEST(GanttDomain, BasicBunchCompilationContextAddColumns) {
+    auto ctx = BasicBunchCompilationContext::create(2, {"exec_1"}, false);
+
+    DomainBunchEntry bunch;
+    bunch.executor_id = "exec_1";
+    bunch.task_indices = {0, 1};
+    bunch.cost = 5.0;
+
+    auto added = ctx.add_columns(0, {bunch});
+    ASSERT_EQ(added.size(), 1u);
+    EXPECT_EQ(added[0], 0u);
+    EXPECT_EQ(ctx.column_count(), 1u);
+}
+
+// 对齐 Rust: test_bunch_shadow_price_pipeline
+// 参考行为：pipeline(n_tasks=3) → refresh(map, [1.0,2.0,0.0]) → extractor(key{0})==1.0
+TEST(GanttDomain, BunchShadowPricePipeline) {
+    auto pipeline = BunchShadowPricePipeline::create(3);
+
+    std::unordered_map<std::size_t, double> shadow_price_map;
+    pipeline.refresh(shadow_price_map, {1.0, 2.0, 0.0});
+
+    auto ext = pipeline.extractor(shadow_price_map);
+    EXPECT_NEAR(ext(TaskShadowPriceKey{0}), 1.0, 1e-10);
+    EXPECT_NEAR(ext(TaskShadowPriceKey{1}), 2.0, 1e-10);
+    EXPECT_NEAR(ext(TaskShadowPriceKey{2}), 0.0, 1e-10);
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_builds_constraint_index_map
+// 参考行为：create(3, ["exec_1"], false) → task_count==3
+TEST(GanttDomain, BasicBunchCompilationContextBuildsConstraintIndexMap) {
+    auto ctx = BasicBunchCompilationContext::create(3, {"exec_1"}, false);
+    EXPECT_EQ(ctx.task_count(), 3u);
+    EXPECT_EQ(ctx.executor_ids.size(), 1u);
+    EXPECT_EQ(ctx.executor_ids[0], "exec_1");
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_with_executor_leisure
+// 参考行为：create(2, ["exec_1"], true) → with_executor_leisure==true
+TEST(GanttDomain, BasicBunchCompilationContextWithExecutorLeisure) {
+    auto ctx = BasicBunchCompilationContext::create(2, {"exec_1"}, true);
+    EXPECT_TRUE(ctx.with_executor_leisure);
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_multiple_executors
+// 参考行为：create(2, ["exec_1","exec_2"]) → executor_ids.size()==2
+TEST(GanttDomain, BasicBunchCompilationContextMultipleExecutors) {
+    auto ctx = BasicBunchCompilationContext::create(2, {"exec_1", "exec_2"}, false);
+    EXPECT_EQ(ctx.executor_ids.size(), 2u);
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_add_multiple_columns
+// 参考行为：add_columns(0, [b1]) + add_columns(1, [b2]) → column_count==2
+TEST(GanttDomain, BasicBunchCompilationContextAddMultipleColumns) {
+    auto ctx = BasicBunchCompilationContext::create(3, {"exec_1"}, false);
+
+    DomainBunchEntry b1;
+    b1.executor_id = "exec_1"; b1.task_indices = {0}; b1.cost = 1.0;
+    DomainBunchEntry b2;
+    b2.executor_id = "exec_1"; b2.task_indices = {1, 2}; b2.cost = 3.0;
+
+    auto a1 = ctx.add_columns(0, {b1});
+    auto a2 = ctx.add_columns(1, {b2});
+
+    EXPECT_EQ(a1.size(), 1u);
+    EXPECT_EQ(a2.size(), 1u);
+    EXPECT_EQ(ctx.column_count(), 2u);
+    EXPECT_EQ(ctx.bunches[0].iteration, 0u);
+    EXPECT_EQ(ctx.bunches[1].iteration, 1u);
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_remove_columns
+// 参考行为：add 2 → remove [0] → column_count==1
+TEST(GanttDomain, BasicBunchCompilationContextRemoveColumns) {
+    auto ctx = BasicBunchCompilationContext::create(3, {"exec_1"}, false);
+
+    DomainBunchEntry b1;
+    b1.executor_id = "exec_1"; b1.task_indices = {0}; b1.cost = 1.0;
+    DomainBunchEntry b2;
+    b2.executor_id = "exec_1"; b2.task_indices = {1}; b2.cost = 2.0;
+
+    ctx.add_columns(0, {b1, b2});
+    EXPECT_EQ(ctx.column_count(), 2u);
+
+    ctx.remove_columns({0u});
+    EXPECT_EQ(ctx.column_count(), 1u);
+    EXPECT_EQ(ctx.bunches[0].executor_id, "exec_1");
+}
+
+// 对齐 Rust: test_basic_bunch_compilation_context_shadow_price_roundtrip
+// 参考行为：pipeline refresh → extractor → 值一致
+TEST(GanttDomain, BasicBunchCompilationContextShadowPriceRoundtrip) {
+    auto pipeline = BunchShadowPricePipeline::create(2);
+    std::unordered_map<std::size_t, double> sp_map;
+    pipeline.refresh(sp_map, {3.5, 7.0});
+
+    auto ext = pipeline.extractor(sp_map);
+    EXPECT_NEAR(ext(TaskShadowPriceKey{0}), 3.5, 1e-10);
+    EXPECT_NEAR(ext(TaskShadowPriceKey{1}), 7.0, 1e-10);
+    // 不存在的键返回 0
+    EXPECT_NEAR(ext(TaskShadowPriceKey{99}), 0.0, 1e-10);
+}
