@@ -1338,3 +1338,63 @@ TEST(GanttDomain, ConstraintIndexMapMissingDualReturnsNone) {
 
     EXPECT_EQ(map.get_by_name("missing"), nullptr);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：infrastructure/time_range.rs 测试 (25 tests — 第 1 批：5 个)
+// 对齐 Rust gantt/infrastructure/time_range.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/infrastructure/time_range.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_difference_split_in_middle
+// 参考行为：[8,18) - [12,14) = [8,12), [14,18) → len==2
+TEST(GanttInfra, TimeRangeDifferenceSplitInMiddle) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(12, 14);
+    auto result = base.difference(other);
+    ASSERT_EQ(result.size(), 2u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 12));
+    EXPECT_EQ(result[1], TimeRange::create(14, 18));
+}
+
+// 对齐 Rust: test_difference_overlap_at_start
+// 参考行为：[8,18) - [6,12) = [12,18) → len==1
+TEST(GanttInfra, TimeRangeDifferenceOverlapAtStart) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(6, 12);
+    auto result = base.difference(other);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], TimeRange::create(12, 18));
+}
+
+// 对齐 Rust: test_difference_overlap_at_end
+// 参考行为：[8,18) - [12,20) = [8,12) → len==1
+TEST(GanttInfra, TimeRangeDifferenceOverlapAtEnd) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(12, 20);
+    auto result = base.difference(other);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], TimeRange::create(8, 12));
+}
+
+// 对齐 Rust: test_difference_completely_covered
+// 参考行为：[8,18) - [6,20) = 空 → len==0
+TEST(GanttInfra, TimeRangeDifferenceCompletelyCovered) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(6, 20);
+    auto result = base.difference(other);
+    EXPECT_TRUE(result.empty());
+}
+
+// 对齐 Rust: test_difference_no_overlap_before
+// 参考行为：[8,18) - [0,6) = [8,18) → len==1
+TEST(GanttInfra, TimeRangeDifferenceNoOverlapBefore) {
+    auto base = TimeRange::create(8, 18);
+    auto other = TimeRange::create(0, 6);
+    auto result = base.difference(other);
+    ASSERT_EQ(result.size(), 1u);
+    EXPECT_EQ(result[0], base);
+}
