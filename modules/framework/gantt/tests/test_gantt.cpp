@@ -1150,3 +1150,77 @@ TEST(GanttDomain, CostMerge) {
     EXPECT_EQ(merged.items.size(), 2u);
     EXPECT_NEAR(merged.solver_cost(0.0), 3.0, 1e-10);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：bunch_compilation/model.rs 测试 / Bunch compilation model tests
+// 对齐 Rust gantt/domain/bunch_compilation/model.rs (4 tests)
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/bunch.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_bunch_aggregation_add
+// 参考行为：BunchAggregation::new() → add_bunches(0, [DomainBunchEntry{index=0,exec="exec_1",tasks=[0,1],cost=10.0,iter=0}]) → added_indices=[0], bunches.len()==1
+TEST(GanttDomain, BunchAggregationAdd) {
+    auto agg = BunchAggregation::create();
+
+    DomainBunchEntry entry;
+    entry.executor_id = "exec_1";
+    entry.task_indices = {0, 1};
+    entry.cost = 10.0;
+
+    auto added = agg.add_bunches(0, {entry});
+
+    ASSERT_EQ(added.size(), 1u);
+    EXPECT_EQ(added[0], 0u);
+    EXPECT_EQ(agg.bunches.size(), 1u);
+    EXPECT_EQ(agg.bunches[0].executor_id, "exec_1");
+    EXPECT_EQ(agg.bunches[0].task_indices.size(), 2u);
+    EXPECT_EQ(agg.bunches[0].iteration, 0u);
+}
+
+// 对齐 Rust: test_bunch_aggregation_dedup
+// 参考行为：添加同一条目两次 → bunches 包含两个条目（无去重）
+TEST(GanttDomain, BunchAggregationDedup) {
+    auto agg = BunchAggregation::create();
+
+    DomainBunchEntry entry;
+    entry.executor_id = "exec_1";
+    entry.task_indices = {0, 1};
+    entry.cost = 10.0;
+
+    agg.add_bunches(0, {entry.clone()});
+    agg.add_bunches(1, {entry.clone()});
+
+    // 两次添加产生两个条目
+    EXPECT_EQ(agg.bunches.size(), 2u);
+    EXPECT_EQ(agg.bunches[0].index, 0u);
+    EXPECT_EQ(agg.bunches[1].index, 1u);
+}
+
+// 对齐 Rust: test_bunch_solution_summary
+// 参考行为：BunchSolution{selected_bunches=[0,1,2], canceled_tasks=[3]} → summary{bunch_count=3, canceled_task_count=1, total_task_count=4}
+TEST(GanttDomain, BunchSolutionSummary) {
+    BunchSolution solution;
+    solution.selected_bunches = {0, 1, 2};
+    solution.canceled_tasks = {3};
+
+    auto summary = solution.summary();
+
+    EXPECT_EQ(summary.bunch_count, 3u);
+    EXPECT_EQ(summary.canceled_task_count, 1u);
+    EXPECT_EQ(summary.total_task_count, 4u);
+}
+
+// 对齐 Rust: test_bunch_solution_summary_empty
+// 参考行为：空 BunchSolution → summary 全为 0
+TEST(GanttDomain, BunchSolutionSummaryEmpty) {
+    BunchSolution solution;
+    auto summary = solution.summary();
+
+    EXPECT_EQ(summary.bunch_count, 0u);
+    EXPECT_EQ(summary.canceled_task_count, 0u);
+    EXPECT_EQ(summary.total_task_count, 0u);
+}
