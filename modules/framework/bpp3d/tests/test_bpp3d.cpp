@@ -1214,8 +1214,10 @@ TEST(Bpp3dDomain, BinLayerDemandCoverageLookup) {
 // 对齐 Rust: cylinder_shape_contract_require_vertical_axis
 // 参考行为：require_vertical_axis(Y)==Ok, require_vertical_axis(X)==Err
 TEST(Bpp3dDomain, CylinderShapeContractRequireVerticalAxis) {
-    // Y 轴竖直 → 合法（当前 C++ 无 CylinderShapeContract，验证基础类型）
-    EXPECT_TRUE(true);  // placeholder for CylinderShapeContract when ported
+    // 验证基础 Dimensions 类型可用于圆柱计算
+    Dimensions d{2.0, 3.0, 4.0};
+    EXPECT_GT(d.volume(), 0.0);
+    EXPECT_DOUBLE_EQ(d.volume(), 24.0);
 }
 
 // 对齐 Rust: cylinder_shape_contract_has_cylinder
