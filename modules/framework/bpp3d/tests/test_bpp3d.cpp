@@ -2090,3 +2090,52 @@ TEST(Bpp3dDomain, PackerSummarizeMaterialsFromPackage) {
     EXPECT_EQ(result.material_summaries[0].material.no, "DEFAULT");
     EXPECT_EQ(result.material_summaries[0].amount, 1u);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：layer_assignment/service/limits/tests.rs 测试
+// 对齐 Rust bpp3d/domain/layer_assignment/service/limits/tests.rs
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/domain/layer_assignment/service/limits/demand_constraint.hpp>
+#include <ospf/framework/bpp3d/domain/layer_assignment/service/value_adapter.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+// 对齐 Rust: demand_constraint_shadow_price_key
+// 参考行为：DemandConstraint::shadow_price_key(entry) → mode==Bpp3dDemandMode::Item
+TEST(Bpp3dLayerAssignment, DemandConstraintShadowPriceKey) {
+    Bpp3dDemandEntry entry;
+    entry.mode = Bpp3dDemandMode::Item;
+    entry.key = {Bpp3dDemandMode::Item, "item1"};
+    entry.demand = 10.0;
+
+    auto key = DemandConstraint::shadow_price_key(entry);
+    EXPECT_EQ(key.mode, Bpp3dDemandMode::Item);
+    EXPECT_EQ(key.key.key, "item1");
+}
+
+// 对齐 Rust: demand_constraint_registers_linear_cover_rows
+// 参考行为：ImpreciseAssignment 2 层 + DemandConstraint::imprecise 1 个需求 → constraint_count==1
+TEST(Bpp3dLayerAssignment, DemandConstraintRegistersLinearCoverRows) {
+    BinLayer layer1;
+    layer1.iteration = 0; layer1.from = "test"; layer1.depth = 1.0;
+
+    BinLayer layer2;
+    layer2.iteration = 0; layer2.from = "test"; layer2.depth = 2.0;
+
+    ImpreciseAssignment assignment;
+    assignment.layers = {layer1, layer2};
+    assignment.upper_bounds = {std::nullopt, std::nullopt};
+
+    Bpp3dDemandEntry demand_entry;
+    demand_entry.mode = Bpp3dDemandMode::Item;
+    demand_entry.key = {Bpp3dDemandMode::Item, "item1"};
+    demand_entry.demand = 1.0;
+
+    auto constraint = DemandConstraint::imprecise({demand_entry}, assignment);
+
+    EXPECT_EQ(constraint.constraint_count(), 1u);
+    EXPECT_EQ(constraint.demand_entries.size(), 1u);
+    EXPECT_EQ(constraint.layer_count, 2u);
+}
