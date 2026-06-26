@@ -1224,3 +1224,27 @@ TEST(GanttDomain, BunchSolutionSummaryEmpty) {
     EXPECT_EQ(summary.canceled_task_count, 0u);
     EXPECT_EQ(summary.total_task_count, 0u);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：capacity_scheduling/model.rs 测试 / Capacity scheduling model tests
+// 对齐 Rust gantt/domain/capacity_scheduling/model.rs (1 test — simplest)
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/capacity_scheduling/model.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_basic_production_action
+// 参考行为：BasicProductionAction::new("action_1","Action 1","executor_1",1.0,10.0)
+//           → id()=="action_1", executor_id()=="executor_1", unit_capacity()==1.0,
+//             unit_cost()==10.0, !discrete()
+TEST(GanttDomain, BasicProductionAction) {
+    BasicProductionAction action("action_1", "Action 1", "executor_1", 1.0, 10.0);
+
+    EXPECT_EQ(action.id(), "action_1");
+    EXPECT_EQ(action.executor_id(), "executor_1");
+    EXPECT_DOUBLE_EQ(action.unit_capacity(), 1.0);
+    EXPECT_DOUBLE_EQ(action.unit_cost(), 10.0);
+    EXPECT_FALSE(action.discrete());
+}
