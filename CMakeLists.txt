@@ -19,6 +19,7 @@ add_subdirectory(modules/math)
 add_subdirectory(modules/quantities)
 add_subdirectory(modules/core)
 add_subdirectory(modules/framework)
+add_subdirectory(modules/example)
 
 # --- Smoke test ---
 find_package(GTest CONFIG REQUIRED)
