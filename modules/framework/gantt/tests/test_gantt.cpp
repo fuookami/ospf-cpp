@@ -1055,3 +1055,98 @@ TEST(GanttTaskColumnGen, IterationTracking) {
     EXPECT_EQ(result.iteration, 5);
     EXPECT_TRUE(result.converged);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：task/cost.rs 测试 / Task cost differential tests
+// 对齐 Rust gantt/domain/task/cost.rs (8 tests)
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/task/cost.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_cost_item_with_quantity
+// 参考行为：CostItem::with_quantity("test", 12.5) → valid()==true, tag=="test", cost_quantity==12.5
+TEST(GanttDomain, CostItemWithQuantity) {
+    auto item = CostItem::with_quantity("test", 12.5);
+    EXPECT_TRUE(item.valid());
+    EXPECT_EQ(item.tag, "test");
+    ASSERT_TRUE(item.cost_quantity.has_value());
+    EXPECT_DOUBLE_EQ(*item.cost_quantity, 12.5);
+}
+
+// 对齐 Rust: test_cost_item_null_quantity
+// 参考行为：CostItem::new("test", None, None) → valid()==false
+TEST(GanttDomain, CostItemNullQuantity) {
+    CostItem item{"test", std::nullopt, std::nullopt};
+    EXPECT_FALSE(item.valid());
+}
+
+// 对齐 Rust: test_cost_sum_computation
+// 参考行为：Cost::new([with_quantity("a",1.25), with_quantity("b",2.75)]) → valid()==true, cost_sum==4.0
+TEST(GanttDomain, CostSumComputation) {
+    auto cost = Cost::create({
+        CostItem::with_quantity("a", 1.25),
+        CostItem::with_quantity("b", 2.75),
+    });
+    EXPECT_TRUE(cost.valid());
+    ASSERT_TRUE(cost.cost_sum.has_value());
+    EXPECT_NEAR(*cost.cost_sum, 4.0, 1e-10);
+}
+
+// 对齐 Rust: test_cost_null_sum
+// 参考行为：Cost::new([with_quantity("a",1.0), CostItem("b",None,None)]) → valid()==false, cost_sum==None
+TEST(GanttDomain, CostNullSum) {
+    auto cost = Cost::create({
+        CostItem::with_quantity("a", 1.0),
+        CostItem{"b", std::nullopt, std::nullopt},
+    });
+    EXPECT_FALSE(cost.valid());
+    EXPECT_FALSE(cost.cost_sum.has_value());
+}
+
+// 对齐 Rust: test_mutable_cost
+// 参考行为：MutableCost::new() → add_item(1.0) + add_item(2.0) → cost_sum==3.0
+TEST(GanttDomain, MutableCost) {
+    auto cost = MutableCost::create();
+    cost.add_item(CostItem::with_quantity("a", 1.0));
+    cost.add_item(CostItem::with_quantity("b", 2.0));
+    ASSERT_TRUE(cost.cost_sum.has_value());
+    EXPECT_NEAR(*cost.cost_sum, 3.0, 1e-10);
+}
+
+// 对齐 Rust: test_mutable_cost_with_invalid_item
+// 参考行为：add_item(1.0) + add_item(None) → items.len()==2, cost_sum==None
+TEST(GanttDomain, MutableCostWithInvalidItem) {
+    auto cost = MutableCost::create();
+    cost.add_item(CostItem::with_quantity("a", 1.0));
+    cost.add_item(CostItem{"b", std::nullopt, std::nullopt});
+    EXPECT_EQ(cost.items.size(), 2u);
+    // 有无效项时 cost_sum 变为 None
+    EXPECT_FALSE(cost.cost_sum.has_value());
+}
+
+// 对齐 Rust: test_cost_solver_cost
+// 参考行为：Cost::new([1.5, 2.5]).solver_cost(0.0)==4.0; Cost::empty().solver_cost(0.0)==0.0
+TEST(GanttDomain, CostSolverCost) {
+    auto cost = Cost::create({
+        CostItem::with_quantity("a", 1.5),
+        CostItem::with_quantity("b", 2.5),
+    });
+    EXPECT_NEAR(cost.solver_cost(0.0), 4.0, 1e-10);
+    EXPECT_NEAR(cost.solver_cost(10.0), 14.0, 1e-10);  // + fixed_cost
+
+    auto empty = Cost::empty();
+    EXPECT_DOUBLE_EQ(empty.solver_cost(0.0), 0.0);
+}
+
+// 对齐 Rust: test_cost_merge
+// 参考行为：Cost([1.0]).merge(Cost([2.0])) → items.len()==2, solver_cost==3.0
+TEST(GanttDomain, CostMerge) {
+    auto cost1 = Cost::create({CostItem::with_quantity("a", 1.0)});
+    auto cost2 = Cost::create({CostItem::with_quantity("b", 2.0)});
+    auto merged = cost1.merge(cost2);
+    EXPECT_EQ(merged.items.size(), 2u);
+    EXPECT_NEAR(merged.solver_cost(0.0), 3.0, 1e-10);
+}
