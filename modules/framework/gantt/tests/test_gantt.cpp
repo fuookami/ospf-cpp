@@ -1609,3 +1609,44 @@ TEST(GanttInfra, TimeRangeFullRangeContainsDistantPast) {
     EXPECT_TRUE(full.contains_instant(-1e17));
     EXPECT_FALSE(full.contains_instant(1e18)); // half-open: excludes end
 }
+
+// ============================================================================
+// 1:1 Rust 移植：infrastructure/local_date_offset.rs 测试 (4 tests)
+// 对齐 Rust gantt/infrastructure/local_date_offset.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/infrastructure/local_date_offset.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: date_after_offset_is_same_day
+// 参考行为：offset=08:00, time=09:00 → same day
+TEST(GanttInfra, LocalDateOffsetDateAfterOffsetIsSameDay) {
+    auto offset = LocalDateOffset::create(8.0);
+    EXPECT_EQ(offset.logical_day(30, 9.0), 30);  // 09:00 > 08:00 → same day
+}
+
+// 对齐 Rust: date_before_offset_is_previous_day
+// 参考行为：offset=08:00, time=07:00 → previous day
+TEST(GanttInfra, LocalDateOffsetDateBeforeOffsetIsPreviousDay) {
+    auto offset = LocalDateOffset::create(8.0);
+    EXPECT_EQ(offset.logical_day(30, 7.0), 29);  // 07:00 < 08:00 → previous day
+}
+
+// 对齐 Rust: date_at_exact_offset_is_same_day
+// 参考行为：offset=08:00, time=08:00 → same day (boundary: not strictly before)
+TEST(GanttInfra, LocalDateOffsetDateAtExactOffsetIsSameDay) {
+    auto offset = LocalDateOffset::create(8.0);
+    EXPECT_EQ(offset.logical_day(30, 8.0), 30);  // 08:00 == offset → same day (not before)
+}
+
+// 对齐 Rust: default_offset_is_midnight
+// 参考行为：default offset = 0:00 → no shift (all times same day)
+TEST(GanttInfra, LocalDateOffsetDefaultIsMidnight) {
+    auto offset = LocalDateOffset::default_offset();
+    EXPECT_DOUBLE_EQ(offset.offset_hours, 0.0);
+    EXPECT_EQ(offset.logical_day(30, 0.0), 30);   // midnight = exact offset → same day
+    EXPECT_EQ(offset.logical_day(30, 12.0), 30);   // noon → same day
+    EXPECT_EQ(offset.logical_day(30, 23.59), 30);  // late night → same day
+}
