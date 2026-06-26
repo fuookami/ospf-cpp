@@ -1901,3 +1901,94 @@ TEST(GanttDomain, FunctionalBunchCostPolicyInjectsBusinessPenalty) {
     auto breakdown = policy.cost_breakdown(bunch, empty_sp);
     EXPECT_DOUBLE_EQ(breakdown.total(), 15.0);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：task/task_step_graph.rs 测试 (5 tests)
+// 对齐 Rust gantt/domain/task/task_step_graph.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/task/task_step_graph.hpp>
+
+using namespace ospf::framework::gantt;
+
+static TaskStep make_step(const std::string& id) {
+    return TaskStep{id, id};
+}
+
+// 对齐 Rust: test_task_step_graph_builds_dag
+// 参考行为：graph with steps [a,b,c], forward a→[b,c], backward [a]→b, [a]→c
+//           → successors("a")==["b","c"], predecessors("b")==["a"], step("c").is_some()
+TEST(GanttDomain, TaskStepGraphBuildsDag) {
+    auto graph_opt = TaskStepGraph::builder("graph_1", "Graph 1")
+        .add_steps({make_step("a"), make_step("b"), make_step("c")})
+        .start_steps({"a"}, StepRelation::And)
+        .forward("a", {"b", "c"}, StepRelation::And)
+        .backward({"a"}, "b", StepRelation::And)
+        .backward({"a"}, "c", StepRelation::And)
+        .build();
+
+    ASSERT_TRUE(graph_opt.has_value());
+    auto& graph = *graph_opt;
+
+    auto succ = graph.successors("a");
+    ASSERT_EQ(succ.size(), 2u);
+    EXPECT_EQ(succ[0], "b");
+    EXPECT_EQ(succ[1], "c");
+
+    auto pred = graph.predecessors("b");
+    ASSERT_EQ(pred.size(), 1u);
+    EXPECT_EQ(pred[0], "a");
+
+    EXPECT_NE(graph.step("c"), nullptr);
+}
+
+// 对齐 Rust: test_task_step_graph_rejects_duplicate_steps
+// 参考行为：add_steps([a, a]) → build() == None, error contains "duplicated"
+TEST(GanttDomain, TaskStepGraphRejectsDuplicateSteps) {
+    auto graph_opt = TaskStepGraph::builder("graph_1", "Graph 1")
+        .add_steps({make_step("a"), make_step("a")})
+        .start_steps({"a"}, StepRelation::And)
+        .build();
+
+    EXPECT_FALSE(graph_opt.has_value());
+}
+
+// 对齐 Rust: test_task_step_graph_rejects_unknown_start_step
+// 参考行为：start_steps(["missing"]) → build() == None, error contains "unknown"
+TEST(GanttDomain, TaskStepGraphRejectsUnknownStartStep) {
+    auto graph_opt = TaskStepGraph::builder("graph_1", "Graph 1")
+        .add_step(make_step("a"))
+        .start_steps({"missing"}, StepRelation::And)
+        .build();
+
+    EXPECT_FALSE(graph_opt.has_value());
+}
+
+// 对齐 Rust: test_task_step_graph_rejects_inconsistent_vectors
+// 参考行为：forward("a", ["b"]) without backward(["a"], "b") → build() == None
+TEST(GanttDomain, TaskStepGraphRejectsInconsistentVectors) {
+    auto graph_opt = TaskStepGraph::builder("graph_1", "Graph 1")
+        .add_steps({make_step("a"), make_step("b")})
+        .start_steps({"a"}, StepRelation::And)
+        .forward("a", {"b"}, StepRelation::And)
+        // missing backward for a→b
+        .build();
+
+    EXPECT_FALSE(graph_opt.has_value());
+}
+
+// 对齐 Rust: test_task_step_graph_rejects_cycle
+// 参考行为：a→b, b→a cycle → build() == None, error contains "DAG"
+TEST(GanttDomain, TaskStepGraphRejectsCycle) {
+    auto graph_opt = TaskStepGraph::builder("graph_1", "Graph 1")
+        .add_steps({make_step("a"), make_step("b")})
+        .start_steps({"a"}, StepRelation::And)
+        .forward("a", {"b"}, StepRelation::And)
+        .forward("b", {"a"}, StepRelation::And)
+        .backward({"b"}, "a", StepRelation::And)
+        .backward({"a"}, "b", StepRelation::And)
+        .build();
+
+    EXPECT_FALSE(graph_opt.has_value());
+}
