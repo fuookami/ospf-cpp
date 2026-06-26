@@ -1416,3 +1416,146 @@ TEST(Bpp3dDomain, SpacePlaceBlockExactFit) {
     // 精确匹配不产生子空间
     EXPECT_TRUE(sub_spaces.empty());
 }
+
+// ============================================================================
+// 1:1 Rust 移植：shape_and_pattern.rs 测试 / Shape and pattern differential tests
+// 对齐 Rust bpp3d/domain/item/model/tests/shape_and_pattern.rs (7 tests)
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/infrastructure/packing_shape.hpp>
+#include <ospf/framework/bpp3d/domain/item/model/item.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+// 对齐 Rust: package_shape_spec_cuboid
+// 参考行为：PackageShapeSpec::Cuboid → is_cuboid==true
+TEST(Bpp3dDomain, PackageShapeSpecCuboid) {
+    auto spec = cuboid_shape_spec();
+    EXPECT_TRUE(is_cuboid(spec));
+    EXPECT_FALSE(is_cylinder(spec));
+}
+
+// 对齐 Rust: package_shape_spec_cylinder_axis_aware
+// 参义：PackageShapeSpec::Cylinder{axis=Y, radius=2.0} → is_cylinder==true, axis==Y
+TEST(Bpp3dDomain, PackageShapeSpecCylinderAxisAware) {
+    auto spec = cylinder_shape_spec(Axis3::Y, 2.0);
+    EXPECT_TRUE(is_cylinder(spec));
+    EXPECT_FALSE(is_cuboid(spec));
+    ASSERT_TRUE(std::holds_alternative<PackageShapeSpecCylinder>(spec));
+    EXPECT_EQ(std::get<PackageShapeSpecCylinder>(spec).axis, Axis3::Y);
+    EXPECT_DOUBLE_EQ(std::get<PackageShapeSpecCylinder>(spec).radius, 2.0);
+}
+
+// 对齐 Rust: pattern_config_and_definition_match_kotlin_controls
+// 参考行为：with_piling(1)→enables_two_sum==false,enables_three_sum==false;
+//           with_piling(2)→enables_two_sum==true,enables_three_sum==false;
+//           with_remainder(true)→enables_two_sum==true,enables_three_sum==true,remainder_allowed==true
+TEST(Bpp3dDomain, PatternConfigAndDefinitionMatchControls) {
+    auto disabled = PatternConfig::create().with_piling(1);
+    EXPECT_FALSE(disabled.enables_two_sum());
+    EXPECT_FALSE(disabled.enables_three_sum());
+
+    auto two_sum = PatternConfig::create().with_piling(2);
+    EXPECT_TRUE(two_sum.enables_two_sum());
+    EXPECT_FALSE(two_sum.enables_three_sum());
+
+    auto unbounded = PatternConfig::create().with_remainder(true);
+    EXPECT_TRUE(unbounded.enables_two_sum());
+    EXPECT_TRUE(unbounded.enables_three_sum());
+    EXPECT_TRUE(unbounded.remainder_allowed);
+}
+
+// 对齐 Rust: actual_item_cuboid_packing_shape
+// 参考行为：item.packing_shape().shape_type == PackingShapeType::Cuboid
+TEST(Bpp3dDomain, ActualItemCuboidPackingShape) {
+    ActualItem item;
+    item.id = "item1";
+    item.name = "Test Item";
+    item.width = 2.0;
+    item.height = 3.0;
+    item.depth = 4.0;
+    item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+
+    auto shape = item.packing_shape();
+    EXPECT_EQ(shape.shape_type, PackingShapeType::Cuboid);
+    EXPECT_FALSE(shape.axis.has_value());
+}
+
+// 对齐 Rust: actual_item_cylinder_packing_shape
+// 参考行为：item.packing_shape().shape_type == PackingShapeType::Cylinder,
+//           shape.axis == Some(Axis3::Y), bounding_width == 4.0
+TEST(Bpp3dDomain, ActualItemCylinderPackingShape) {
+    ActualItem item;
+    item.id = "cyl1";
+    item.name = "Cylinder Item";
+    item.width = 4.0;
+    item.height = 5.0;
+    item.depth = 4.0;
+    item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Upright};
+    item.shape_spec_override = cylinder_shape_spec(Axis3::Y, 2.0);
+
+    auto shape = item.packing_shape();
+    EXPECT_EQ(shape.shape_type, PackingShapeType::Cylinder);
+    ASSERT_TRUE(shape.axis.has_value());
+    EXPECT_EQ(*shape.axis, Axis3::Y);
+    EXPECT_DOUBLE_EQ(shape.bounding_width, 4.0);
+    EXPECT_DOUBLE_EQ(shape.bounding_height, 5.0);
+    EXPECT_DOUBLE_EQ(shape.bounding_depth, 4.0);
+}
+
+// 对齐 Rust: actual_item_cylinder_packing_shape_uses_axis_length
+// 参考行为：X 轴圆柱→bounding_width==8.0; Z 轴圆柱→bounding_depth==9.0
+TEST(Bpp3dDomain, ActualItemCylinderPackingShapeUsesAxisLength) {
+    ActualItem x_axis;
+    x_axis.id = "cyl-x";
+    x_axis.width = 8.0; x_axis.height = 4.0; x_axis.depth = 4.0; x_axis.weight = 1.0;
+    x_axis.shape_spec_override = cylinder_shape_spec(Axis3::X, 2.0);
+
+    ActualItem z_axis;
+    z_axis.id = "cyl-z";
+    z_axis.width = 4.0; z_axis.height = 4.0; z_axis.depth = 9.0; z_axis.weight = 1.0;
+    z_axis.shape_spec_override = cylinder_shape_spec(Axis3::Z, 2.0);
+
+    auto x_shape = x_axis.packing_shape();
+    auto z_shape = z_axis.packing_shape();
+
+    ASSERT_TRUE(x_shape.axis.has_value());
+    EXPECT_EQ(*x_shape.axis, Axis3::X);
+    EXPECT_DOUBLE_EQ(x_shape.bounding_width, 8.0);
+    EXPECT_DOUBLE_EQ(x_shape.bounding_height, 4.0);
+    EXPECT_DOUBLE_EQ(x_shape.bounding_depth, 4.0);
+
+    ASSERT_TRUE(z_shape.axis.has_value());
+    EXPECT_EQ(*z_shape.axis, Axis3::Z);
+    EXPECT_DOUBLE_EQ(z_shape.bounding_width, 4.0);
+    EXPECT_DOUBLE_EQ(z_shape.bounding_height, 4.0);
+    EXPECT_DOUBLE_EQ(z_shape.bounding_depth, 9.0);
+}
+
+// 对齐 Rust: actual_item_oriented_cylinder_packing_shape_updates_axis
+// 参考行为：Y 轴圆柱 Side 朝向→axis=X, width=8; Lie 朝向→axis=Z, depth=8
+TEST(Bpp3dDomain, ActualItemOrientedCylinderPackingShapeUpdatesAxis) {
+    ActualItem item;
+    item.id = "cyl-y";
+    item.width = 4.0; item.height = 8.0; item.depth = 4.0; item.weight = 1.0;
+    item.enabled_orientations = {Orientation::Side, Orientation::Lie};
+    item.shape_spec_override = cylinder_shape_spec(Axis3::Y, 2.0);
+
+    auto side_shape = item.oriented_packing_shape(Orientation::Side);
+    auto lie_shape = item.oriented_packing_shape(Orientation::Lie);
+
+    ASSERT_TRUE(side_shape.axis.has_value());
+    EXPECT_EQ(*side_shape.axis, Axis3::X);
+    EXPECT_DOUBLE_EQ(side_shape.bounding_width, 8.0);
+    EXPECT_DOUBLE_EQ(side_shape.bounding_height, 4.0);
+    EXPECT_DOUBLE_EQ(side_shape.bounding_depth, 4.0);
+
+    ASSERT_TRUE(lie_shape.axis.has_value());
+    EXPECT_EQ(*lie_shape.axis, Axis3::Z);
+    EXPECT_DOUBLE_EQ(lie_shape.bounding_width, 4.0);
+    EXPECT_DOUBLE_EQ(lie_shape.bounding_height, 4.0);
+    EXPECT_DOUBLE_EQ(lie_shape.bounding_depth, 8.0);
+}

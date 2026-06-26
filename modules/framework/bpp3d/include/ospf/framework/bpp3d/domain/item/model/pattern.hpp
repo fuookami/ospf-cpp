@@ -135,9 +135,9 @@ namespace ospf::framework::bpp3d {
     /// 对应 Rust PatternConfig
     struct PatternConfig {
         /// 允许堆叠层数 / Allowed piling layer count
-        std::optional<std::size_t> with_piling;
+        std::optional<std::size_t> piling_count;
         /// 是否允许余项模式 / Whether remainder patterns are allowed
-        bool with_remainder = false;
+        bool remainder_allowed = false;
         /// 模式列表 / Pattern list
         std::vector<std::vector<PatternStep>> patterns;
         /// 底面长度范围（底面较长维度）/ Bottom length range (longer bottom dimension)
@@ -148,6 +148,34 @@ namespace ospf::framework::bpp3d {
         /// 创建配置 / Create config
         [[nodiscard]] static PatternConfig create() {
             return PatternConfig{};
+        }
+
+        /// 设置堆叠层数 / Set piling layers
+        /// 对应 Rust PatternConfig::with_piling
+        [[nodiscard]] PatternConfig with_piling(std::size_t n) const {
+            PatternConfig copy = *this;
+            copy.piling_count = n;
+            return copy;
+        }
+
+        /// 设置允许余项 / Set allow remainder
+        /// 对应 Rust PatternConfig::with_remainder
+        [[nodiscard]] PatternConfig with_remainder(bool allow) const {
+            PatternConfig copy = *this;
+            copy.remainder_allowed = allow;
+            return copy;
+        }
+
+        /// 是否允许二层混合堆 / Whether two-layer mixed pile is enabled
+        /// 对应 Rust PatternConfig::enables_two_sum
+        [[nodiscard]] bool enables_two_sum() const noexcept {
+            return !piling_count.has_value() || *piling_count >= 2;
+        }
+
+        /// 是否允许三层混合堆 / Whether three-layer mixed pile is enabled
+        /// 对应 Rust PatternConfig::enables_three_sum
+        [[nodiscard]] bool enables_three_sum() const noexcept {
+            return !piling_count.has_value() || *piling_count >= 3;
         }
 
         /// 设置底面长度范围 / Set bottom length range

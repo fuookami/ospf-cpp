@@ -2,6 +2,7 @@
 /// BPP3D domain/item/model/package_attribute/attribute /// 1:1 对应 Rust bpp3d/domain/item/model/package_attribute/attribute.rs
 /// PackageAttribute + Orientation + PackageOrientationRule + orientation_rules
 
+#include <ospf/framework/bpp3d/infrastructure/orientation.hpp>
 #include <ospf/framework/bpp3d/domain/item/model/package_attribute/classification.hpp>
 #include <ospf/framework/bpp3d/domain/item/model/package_attribute/physical_attributes.hpp>
 #include <ospf/framework/bpp3d/domain/item/model/package_attribute/placement_rules.hpp>
@@ -13,46 +14,6 @@
 #include <vector>
 
 namespace ospf::framework::bpp3d {
-
-    // ============================================================================
-    // 朝向 / Orientation
-    // 对应 Rust Orientation
-    // ============================================================================
-
-    /// 朝向 / Orientation
-    /// 对应 Rust Orientation
-    enum class Orientation {
-        /// 直立 / Upright
-        Upright,
-        /// 侧放 / Side
-        Side,
-        /// 平放 / Lie
-        Lie,
-        /// 直立旋转 / Upright rotated
-        UprightRotated
-    };
-
-    /// 朝向类别 / Orientation category
-    /// 对应 Rust OrientationCategory
-    enum class OrientationCategory {
-        Upright,
-        Side,
-        Lie
-    };
-
-    /// 获取朝向类别 / Get orientation category
-    [[nodiscard]] inline OrientationCategory orientation_category(Orientation o) noexcept {
-        switch (o) {
-            case Orientation::Upright:
-            case Orientation::UprightRotated:
-                return OrientationCategory::Upright;
-            case Orientation::Side:
-                return OrientationCategory::Side;
-            case Orientation::Lie:
-                return OrientationCategory::Lie;
-        }
-        return OrientationCategory::Upright;
-    }
 
     // ============================================================================
     // 朝向规则 / Orientation rules
