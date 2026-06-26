@@ -1748,3 +1748,106 @@ TEST(GanttInfra, TimeWindowSecondsDurationOf) {
     window.interval_hours = 1.0;
     EXPECT_NEAR(window.duration_of(3600.0), 1.0, 1e-10);  // 3600s = 1h
 }
+
+// ============================================================================
+// 1:1 Rust 移植：infrastructure/working_calendar.rs 测试 (11 tests)
+// 对齐 Rust gantt/infrastructure/working_calendar.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/infrastructure/working_calendar.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_actual_time_at_no_unavailable
+// 参考行为：window[8,18) + 无不可用 → actual_time_at(10) == 10
+TEST(GanttInfra, ActualTimeAtNoUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window);
+    EXPECT_DOUBLE_EQ(calendar.actual_time_at(10.0), 10.0);
+}
+
+// 对齐 Rust: test_actual_time_at_with_unavailable
+// 参考行为：window[8,18) + 不可用[10,12) → actual_time_at(9)==9, actual_time_at(11)==12
+TEST(GanttInfra, ActualTimeAtWithUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 12)});
+    EXPECT_DOUBLE_EQ(calendar.actual_time_at(9.0), 9.0);
+    EXPECT_DOUBLE_EQ(calendar.actual_time_at(11.0), 12.0);  // 跳到不可用段结束
+}
+
+// 对齐 Rust: test_actual_time_at_with_connection_time
+// 参考行为：window[8,18) + 不可用[10,12) + after_connection=0.5h
+//           → actual_time_at(11) == 12 + 0.5 = 12.5
+TEST(GanttInfra, ActualTimeAtWithConnectionTime) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 12)});
+    EXPECT_NEAR(calendar.actual_time_at(11.0, {}, std::nullopt, 0.5), 12.5, 1e-10);
+}
+
+// 对齐 Rust: test_actual_time_range_no_unavailable
+// 参考行为：window[8,18) + range[8,12) → working_times.len()==1, working_duration()==4h
+TEST(GanttInfra, ActualTimeRangeNoUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window);
+    auto result = calendar.actual_time_range(TimeRange::create(8, 12));
+    EXPECT_EQ(result.working_times.size(), 1u);
+    EXPECT_NEAR(result.working_duration(), 4.0, 1e-10);
+}
+
+// 对齐 Rust: test_actual_time_range_with_unavailable
+// 参考行为：window[8,18) + 不可用[10,11) + range[8,12)
+//           → working_times >= 2, working_duration == 4h
+TEST(GanttInfra, ActualTimeRangeWithUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 11)});
+    auto result = calendar.actual_time_range(TimeRange::create(8, 12));
+    EXPECT_GE(result.working_times.size(), 2u);
+    EXPECT_NEAR(result.working_duration(), 4.0, 1e-10);
+}
+
+// 对齐 Rust: test_working_calendar_window_duration
+// 参考行为：window[8,18) → duration == 10h
+TEST(GanttInfra, WorkingCalendarWindowDuration) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window);
+    EXPECT_NEAR(calendar.window.duration(), 10.0, 1e-10);
+}
+
+// 对齐 Rust: test_working_calendar_unavailable_times_stored
+// 参考行为：不可用时间段被正确存储
+TEST(GanttInfra, WorkingCalendarUnavailableTimesStored) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 12), TimeRange::create(14, 15)});
+    EXPECT_EQ(calendar.unavailable_times.size(), 2u);
+}
+
+// 对齐 Rust: test_actual_time_range_covering_unavailable
+// 参考行为：range[8,18) + 不可用[10,12) → working_times[8,10)+[12,18), 8h total
+TEST(GanttInfra, ActualTimeRangeCoveringUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 12)});
+    auto result = calendar.actual_time_range(TimeRange::create(8, 18));
+    EXPECT_GE(result.working_times.size(), 2u);
+    EXPECT_NEAR(result.working_duration(), 8.0, 1e-10);
+}
+
+// 对齐 Rust: test_actual_time_range_multiple_unavailable
+// 参考行为：range[8,18) + 不可用[9,10) + 不可用[13,14) → working_duration == 8h
+TEST(GanttInfra, ActualTimeRangeMultipleUnavailable) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    std::vector<TimeRange> unavail = {TimeRange::create(9, 10), TimeRange::create(13, 14)};
+    auto calendar = WorkingCalendar::create(window, std::move(unavail));
+    auto result = calendar.actual_time_range(TimeRange::create(8, 18));
+    EXPECT_GE(result.working_times.size(), 3u);
+    EXPECT_NEAR(result.working_duration(), 8.0, 1e-10);
+}
+
+// 对齐 Rust: test_actual_time_range_fully_covered
+// 参考行为：range[10,12) + 不可用[10,12) → working_times 为空或 0h
+TEST(GanttInfra, ActualTimeRangeFullyCovered) {
+    auto window = TimeWindow::hours(TimeRange::create(8, 18), 0.0, true, 1.0);
+    auto calendar = WorkingCalendar::create(window, {TimeRange::create(10, 12)});
+    auto result = calendar.actual_time_range(TimeRange::create(10, 12));
+    EXPECT_NEAR(result.working_duration(), 0.0, 1e-10);
+}
