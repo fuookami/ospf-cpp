@@ -1992,3 +1992,77 @@ TEST(GanttDomain, TaskStepGraphRejectsCycle) {
 
     EXPECT_FALSE(graph_opt.has_value());
 }
+
+// ============================================================================
+// 1:1 Rust 移植：bunch_generation/label.rs 测试 (4 tests)
+// 对齐 Rust gantt/domain/bunch_generation/label.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/bunch_generation/label.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_root_label
+// 参考行为：Label::root() → !is_better_bunch(), cost==0.0, task_index==None
+TEST(GanttDomain, RootLabel) {
+    auto label = Label::root();
+    EXPECT_FALSE(label.is_better_bunch());
+    EXPECT_NEAR(label.cost.cost_sum.value_or(999.0), 0.0, 1e-10);
+    EXPECT_FALSE(label.task_index.has_value());
+}
+
+// 对齐 Rust: test_label_chain
+// 参考行为：root→task1(cost=5,sp=2)→task2(cost=8,sp=3)→end
+//           → generate_bunch_tasks()==[0,1], reduced_cost==(8-3)=5.0
+TEST(GanttDomain, LabelChain) {
+    auto root = Label::root();
+
+    Node task1_node = Node::task(TaskNode{0, 1, 100.0});
+    Cost cost1 = Cost::create({CostItem::with_quantity("t1", 5.0)});
+    auto task1 = Label::task(root, task1_node, 0, cost1, 2.0);
+
+    Node task2_node = Node::task(TaskNode{1, 2, 200.0});
+    Cost cost2 = Cost::create({CostItem::with_quantity("t2", 8.0)});
+    auto task2 = Label::task(task1, task2_node, 1, cost2, 3.0);
+
+    auto end_label = Label::end(task2);
+
+    auto tasks_opt = end_label.generate_bunch_tasks();
+    ASSERT_TRUE(tasks_opt.has_value());
+    EXPECT_EQ(tasks_opt->size(), 2u);
+    EXPECT_EQ((*tasks_opt)[0], 0u);
+    EXPECT_EQ((*tasks_opt)[1], 1u);
+
+    EXPECT_NEAR(end_label.reduced_cost(), 5.0, 1e-9);  // cost(8) - shadow_price(3) = 5
+}
+
+// 对齐 Rust: test_label_visited
+// 参考行为：root→task(node_index=1) → visited(Root)==true, visited(task_node)==true, visited(End)==false
+TEST(GanttDomain, LabelVisited) {
+    auto root = Label::root();
+    Node task_node = Node::task(TaskNode{0, 1, 100.0});
+    Cost cost = Cost::create({CostItem::with_quantity("t", 5.0)});
+    auto task_label = Label::task(root, task_node, 0, cost, 0.0);
+
+    EXPECT_TRUE(task_label.visited(Node::root()));
+    EXPECT_TRUE(task_label.visited(task_node));
+    EXPECT_FALSE(task_label.visited(Node::end()));
+}
+
+// 对齐 Rust: test_label_dominance
+// 参考行为：a(cost=5,sp=3) dominates b(cost=8,sp=2) → true; b dominates a → false
+TEST(GanttDomain, LabelDominance) {
+    Node task_node = Node::task(TaskNode{0, 1, 100.0});
+
+    Cost cost_a = Cost::create({CostItem::with_quantity("a", 5.0)});
+    auto label_a = Label::task(Label::root(), task_node, 0, cost_a, 3.0);
+
+    Cost cost_b = Cost::create({CostItem::with_quantity("b", 8.0)});
+    auto label_b = Label::task(Label::root(), task_node, 0, cost_b, 2.0);
+
+    // a: cost=5, shadow=3; b: cost=8, shadow=2
+    // a has lower cost AND higher shadow price → a dominates b
+    EXPECT_TRUE(label_dominates(label_a, label_b));
+    EXPECT_FALSE(label_dominates(label_b, label_a));
+}
