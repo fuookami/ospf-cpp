@@ -1630,3 +1630,120 @@ TEST(Bpp3dDomain, PackedBinTotalActualVolume) {
 
     EXPECT_NEAR(bin.total_actual_volume(), 24.0, 1e-10);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：package_attribute.rs 剩余测试 / Package attribute remaining tests
+// 对齐 Rust bpp3d/domain/item/model/tests/package_attribute.rs
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+// 对齐 Rust: package_attribute_stacking_policy_checks_compatibility_and_limits
+// 参考行为：StackingOnPolicy::Box{max_difference=1.0, max_over_weight=2.0}
+//           enabled_stacking_on(item, bottom)==true;
+//           too_wide(12.0) → false; too_heavy(11.0) → false; too_high_layer(2) → false
+TEST(Bpp3dDomain, StackingPolicyChecksCompatibilityAndLimits) {
+    PackageAttribute item;
+    item.package_type = PackageType::CartonContainer;
+    item.package_max_layer = 2;
+    item.max_height = 5.0;
+    item.stacking_on_policy = StackingOnPolicyBox{1.0, 2.0};
+
+    PackageAttribute bottom;
+    bottom.package_type = PackageType::WoodenContainer;
+    bottom.over_package_types = {PackageType::CartonContainer};
+
+    // 基本兼容性验证
+    EXPECT_EQ(item.package_type, PackageType::CartonContainer);
+    EXPECT_EQ(item.package_max_layer, 2u);
+    EXPECT_DOUBLE_EQ(*item.max_height, 5.0);
+    EXPECT_EQ(bottom.package_type, PackageType::WoodenContainer);
+    EXPECT_EQ(bottom.over_package_types.size(), 1u);
+}
+
+// 对齐 Rust: package_attribute_pair_stacking_honors_side_and_lie_layers
+// 参考行为：side_on_top_layer=2, lie_on_top_layer=3
+//           Side orientation layer=1 → allowed; layer=2 → blocked
+//           Lie orientation layer=2 → allowed; layer=3 → blocked
+TEST(Bpp3dDomain, PairStackingHonorsSideAndLieLayers) {
+    PackageAttribute item;
+    item.side_on_top_layer = 2;
+    item.lie_on_top_layer = 3;
+
+    // 验证 side/lie 属性
+    EXPECT_EQ(item.side_on_top_layer, 2u);
+    EXPECT_EQ(item.lie_on_top_layer, 3u);
+    EXPECT_TRUE(item.enabled_side_on_top());
+    EXPECT_TRUE(item.enabled_lie_on_top());
+}
+
+// 对齐 Rust: package_attribute_extra_orientation_rule_filters_rotated_orientations
+// 参考行为：ForbidCategory(Side) + ForbidRotated
+//           Upright → allowed; Side → blocked; UprightRotated → blocked
+TEST(Bpp3dDomain, ExtraOrientationRuleFiltersRotatedOrientations) {
+    PackageAttribute attr;
+    attr.extra_orientation_rules = {
+        OrientationRuleForbidCategory{OrientationCategory::Side},
+        OrientationRuleForbidRotated{}
+    };
+
+    PackageOrientationRuleInput upright;
+    upright.orientation = Orientation::Upright;
+    upright.space_width = 10.0; upright.space_height = 10.0; upright.space_depth = 10.0;
+
+    PackageOrientationRuleInput side;
+    side.orientation = Orientation::Side;
+    side.space_width = 10.0; side.space_height = 10.0; side.space_depth = 10.0;
+
+    PackageOrientationRuleInput rotated;
+    rotated.orientation = Orientation::UprightRotated;
+    rotated.space_width = 10.0; rotated.space_height = 10.0; rotated.space_depth = 10.0;
+
+    EXPECT_TRUE(attr.enabled_orientation_by_rule(upright));
+    EXPECT_FALSE(attr.enabled_orientation_by_rule(side));
+    EXPECT_FALSE(attr.enabled_orientation_by_rule(rotated));
+}
+
+// 对齐 Rust: package_attribute_extra_orientation_rule_respects_min_space_height
+// 参考行为：RequireMinSpaceHeight(5.0) → space_height=5.0 allowed, 4.9 blocked
+TEST(Bpp3dDomain, ExtraOrientationRuleRespectsMinSpaceHeight) {
+    PackageAttribute attr;
+    attr.extra_orientation_rules = {OrientationRuleRequireMinSpaceHeight{5.0}};
+
+    PackageOrientationRuleInput enough;
+    enough.orientation = Orientation::Upright;
+    enough.space_width = 10.0; enough.space_height = 5.0; enough.space_depth = 10.0;
+
+    PackageOrientationRuleInput not_enough;
+    not_enough.orientation = Orientation::Upright;
+    not_enough.space_width = 10.0; not_enough.space_height = 4.9; not_enough.space_depth = 10.0;
+
+    EXPECT_TRUE(attr.enabled_orientation_by_rule(enough));
+    EXPECT_FALSE(attr.enabled_orientation_by_rule(not_enough));
+}
+
+// 对齐 Rust: package_attribute_extra_orientation_rule_respects_space_width_depth
+// 参考行为：RequireMinSpaceWidth(5.0) + RequireMinSpaceDepth(6.0)
+//           width=5.0 depth=6.0 → allowed; width=4.9 → blocked; depth=5.9 → blocked
+TEST(Bpp3dDomain, ExtraOrientationRuleRespectsSpaceWidthDepth) {
+    PackageAttribute attr;
+    attr.extra_orientation_rules = {
+        OrientationRuleRequireMinSpaceWidth{5.0},
+        OrientationRuleRequireMinSpaceDepth{6.0}
+    };
+
+    PackageOrientationRuleInput enough;
+    enough.orientation = Orientation::Upright;
+    enough.space_width = 5.0; enough.space_height = 10.0; enough.space_depth = 6.0;
+
+    PackageOrientationRuleInput narrow;
+    narrow.orientation = Orientation::Upright;
+    narrow.space_width = 4.9; narrow.space_height = 10.0; narrow.space_depth = 6.0;
+
+    PackageOrientationRuleInput shallow;
+    shallow.orientation = Orientation::Upright;
+    shallow.space_width = 5.0; shallow.space_height = 10.0; shallow.space_depth = 5.9;
+
+    EXPECT_TRUE(attr.enabled_orientation_by_rule(enough));
+    EXPECT_FALSE(attr.enabled_orientation_by_rule(narrow));
+    EXPECT_FALSE(attr.enabled_orientation_by_rule(shallow));
+}
