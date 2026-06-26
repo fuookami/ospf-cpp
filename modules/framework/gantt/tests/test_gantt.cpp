@@ -1851,3 +1851,53 @@ TEST(GanttInfra, ActualTimeRangeFullyCovered) {
     auto result = calendar.actual_time_range(TimeRange::create(10, 12));
     EXPECT_NEAR(result.working_duration(), 0.0, 1e-10);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：task/cost_policy.rs 测试 (2 tests)
+// 对齐 Rust gantt/domain/task/cost_policy.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/task/cost_policy.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_default_bunch_cost_policy_uses_bunch_cost
+// 参考行为：bunch.cost=10.0, shadow_prices={0:2.0, 1:3.0} → reduced_cost = 10 - (2+3) = 5.0
+TEST(GanttDomain, DefaultBunchCostPolicyUsesBunchCost) {
+    DomainBunchEntry bunch;
+    bunch.index = 0;
+    bunch.executor_id = "exec_1";
+    bunch.task_indices = {0, 1};
+    bunch.cost = 10.0;
+
+    DefaultBunchCostPolicy policy;
+    std::unordered_map<std::size_t, double> shadow_prices = {{0, 2.0}, {1, 3.0}};
+    double reduced = policy.reduced_cost(bunch, shadow_prices);
+    EXPECT_NEAR(reduced, 5.0, 1e-10);
+}
+
+// 对齐 Rust: test_functional_bunch_cost_policy_injects_business_penalty
+// 参考行为：bunch.cost=1.0 + 注入 task=1, exec=2, conn=3, cap=4, pen=5 → total==15.0
+TEST(GanttDomain, FunctionalBunchCostPolicyInjectsBusinessPenalty) {
+    DomainBunchEntry bunch;
+    bunch.index = 0;
+    bunch.executor_id = "exec_1";
+    bunch.task_indices = {0};
+    bunch.cost = 1.0;
+
+    FunctionalBunchCostPolicy policy;
+    policy.cost_breakdown_fn = [](const DomainBunchEntry& b, const auto&) {
+        CostBreakdown bd;
+        bd.task_cost = b.cost;
+        bd.executor_cost = 2.0;
+        bd.connection_cost = 3.0;
+        bd.capacity_cost = 4.0;
+        bd.penalty_cost = 5.0;
+        return bd;
+    };
+
+    std::unordered_map<std::size_t, double> empty_sp;
+    auto breakdown = policy.cost_breakdown(bunch, empty_sp);
+    EXPECT_DOUBLE_EQ(breakdown.total(), 15.0);
+}
