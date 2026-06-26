@@ -1315,3 +1315,104 @@ TEST(Bpp3dDomain, PackageAttributeWithCargoAttribute) {
     ASSERT_TRUE(attr.cargo_attribute.has_value());
     EXPECT_EQ(attr.cargo_attribute->no, "fragile");
 }
+
+// ============================================================================
+// 1:1 Rust 移植：block_loading/model.rs 测试 / Block loading model differential tests
+// 对齐 Rust bpp3d/domain/block_loading/model.rs (6 tests)
+// 替换 Bpp3dBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/bpp3d/domain/block_loading/model.hpp>
+
+using namespace ospf::framework::bpp3d;
+
+// 对齐 Rust: simple_block_from_item_view
+// 参考行为：SimpleBlock::from_item_view(view, 2, 3, 1) → nx=2, ny=3, nz=1,
+//           item_count=6, width=4.0, height=9.0, depth=4.0, weight=6.0
+TEST(Bpp3dDomain, SimpleBlockFromItemView) {
+    ItemView view;
+    view.item_index = 0;
+    view.orientation = 0;
+    view.width = 2.0;
+    view.height = 3.0;
+    view.depth = 4.0;
+    view.weight = 1.0;
+
+    auto block = SimpleBlock::from_item_view(view, 2, 3, 1);
+
+    EXPECT_EQ(block.nx, 2u);
+    EXPECT_EQ(block.ny, 3u);
+    EXPECT_EQ(block.nz, 1u);
+    EXPECT_EQ(block.item_count, 6u);
+    EXPECT_DOUBLE_EQ(block.width, 4.0);   // 2 * 2.0
+    EXPECT_DOUBLE_EQ(block.height, 9.0);  // 3 * 3.0
+    EXPECT_DOUBLE_EQ(block.depth, 4.0);   // 1 * 4.0
+    EXPECT_DOUBLE_EQ(block.weight, 6.0);  // 6 * 1.0
+}
+
+// 对齐 Rust: space_fits_block
+// 参考行为：space(10x10x10) 放置 block(5x5x5) → fits==true
+TEST(Bpp3dDomain, SpaceFitsBlock) {
+    Space space({0.0, 0.0, 0.0}, {10.0, 10.0, 10.0});
+
+    ItemView view;
+    view.width = 5.0; view.height = 5.0; view.depth = 5.0; view.weight = 1.0;
+    auto block = SimpleBlock::from_item_view(view, 1, 1, 1);
+
+    EXPECT_TRUE(space.fits(block));
+}
+
+// 对齐 Rust: space_does_not_fit_block
+// 参考行为：space(3x10x10) 放置 block(5x5x5) → fits==false（宽度不够）
+TEST(Bpp3dDomain, SpaceDoesNotFitBlock) {
+    Space space({0.0, 0.0, 0.0}, {3.0, 10.0, 10.0});
+
+    ItemView view;
+    view.width = 5.0; view.height = 5.0; view.depth = 5.0; view.weight = 1.0;
+    auto block = SimpleBlock::from_item_view(view, 1, 1, 1);
+
+    EXPECT_FALSE(space.fits(block));
+}
+
+// 对齐 Rust: space_place_block_subspaces
+// 参考行为：space(10x10x10) 放置 block(5x5x5) → 3 个子空间（右侧、上方、前方）
+TEST(Bpp3dDomain, SpacePlaceBlockSubSpaces) {
+    Space space({0.0, 0.0, 0.0}, {10.0, 10.0, 10.0});
+
+    ItemView view;
+    view.width = 5.0; view.height = 5.0; view.depth = 5.0; view.weight = 1.0;
+    auto block = SimpleBlock::from_item_view(view, 1, 1, 1);
+
+    auto sub_spaces = space.place_block(block);
+
+    // 应产生 3 个子空间：右侧、上方、前方
+    ASSERT_EQ(sub_spaces.size(), 3u);
+
+    // 右侧：原点(5,0,0)，尺寸(5x10x10)
+    EXPECT_DOUBLE_EQ(sub_spaces[0].origin.x, 5.0);
+    EXPECT_DOUBLE_EQ(sub_spaces[0].width(), 5.0);
+
+    // 上方：原点(0,5,0)，尺寸(5x5x10)
+    EXPECT_DOUBLE_EQ(sub_spaces[1].origin.y, 5.0);
+    EXPECT_DOUBLE_EQ(sub_spaces[1].width(), 5.0);
+    EXPECT_DOUBLE_EQ(sub_spaces[1].height(), 5.0);
+
+    // 前方：原点(0,0,5)，尺寸(5x5x5)
+    EXPECT_DOUBLE_EQ(sub_spaces[2].origin.z, 5.0);
+    EXPECT_DOUBLE_EQ(sub_spaces[2].depth(), 5.0);
+}
+
+// 对齐 Rust: space_place_block_exact_fit
+// 参考行为：space(5x5x5) 放置 block(5x5x5) → 精确匹配，0 个子空间
+TEST(Bpp3dDomain, SpacePlaceBlockExactFit) {
+    Space space({0.0, 0.0, 0.0}, {5.0, 5.0, 5.0});
+
+    ItemView view;
+    view.width = 5.0; view.height = 5.0; view.depth = 5.0; view.weight = 1.0;
+    auto block = SimpleBlock::from_item_view(view, 1, 1, 1);
+
+    auto sub_spaces = space.place_block(block);
+
+    // 精确匹配不产生子空间
+    EXPECT_TRUE(sub_spaces.empty());
+}
