@@ -2139,3 +2139,35 @@ TEST(Bpp3dLayerAssignment, DemandConstraintRegistersLinearCoverRows) {
     EXPECT_EQ(constraint.demand_entries.size(), 1u);
     EXPECT_EQ(constraint.layer_count, 2u);
 }
+
+// ============================================================================
+// 1:1 Rust 移植：layer_assignment/service/tests.rs (value_adapter tests)
+// 对齐 Rust bpp3d/domain/layer_assignment/service/tests.rs
+// ============================================================================
+
+// 对齐 Rust: default_solver_value_adapter
+// 参考行为：amount_to_solver(10)==10.0, length_to_solver(1.5)==1.5
+TEST(Bpp3dLayerAssignment, DefaultSolverValueAdapter) {
+    DefaultBpp3dSolverValueAdapter adapter;
+    EXPECT_DOUBLE_EQ(adapter.amount_to_solver(10), 10.0);
+    EXPECT_DOUBLE_EQ(adapter.length_to_solver(1.5), 1.5);
+}
+
+// 对齐 Rust: scaled_solver_value_adapter
+// 参考行为：ten_times() → amount_to_solver(5)==50.0, length(1.5)==15.0, weight(2.0)==20.0, volume(3.0)==30.0, depth(1.0)==10.0
+TEST(Bpp3dLayerAssignment, ScaledSolverValueAdapter) {
+    auto adapter = ScaledBpp3dSolverValueAdapter::ten_times();
+    EXPECT_DOUBLE_EQ(adapter.amount_to_solver(5), 50.0);
+    EXPECT_DOUBLE_EQ(adapter.length_to_solver(1.5), 15.0);
+    EXPECT_DOUBLE_EQ(adapter.weight_to_solver(2.0), 20.0);
+    EXPECT_DOUBLE_EQ(adapter.volume_to_solver(3.0), 30.0);
+    EXPECT_DOUBLE_EQ(adapter.depth_to_solver(1.0), 10.0);
+}
+
+// 对齐 Rust: scaled_solver_value_adapter_default
+// 参考行为：default_adapter() → amount_to_solver(5)==5.0, length(1.5)==1.5
+TEST(Bpp3dLayerAssignment, ScaledSolverValueAdapterDefault) {
+    auto adapter = ScaledBpp3dSolverValueAdapter::default_adapter();
+    EXPECT_DOUBLE_EQ(adapter.amount_to_solver(5), 5.0);
+    EXPECT_DOUBLE_EQ(adapter.length_to_solver(1.5), 1.5);
+}
