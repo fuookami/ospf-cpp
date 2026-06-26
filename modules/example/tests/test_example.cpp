@@ -7,8 +7,25 @@
 #include <ospf/example/core/demo1.hpp>
 #include <ospf/example/core/demo2.hpp>
 #include <ospf/example/core/demo3.hpp>
+#include <ospf/example/core/demo4.hpp>
+#include <ospf/example/core/demo5.hpp>
+#include <ospf/example/core/demo6.hpp>
+#include <ospf/example/core/demo7.hpp>
+#include <ospf/example/core/demo8.hpp>
+#include <ospf/example/core/demo9.hpp>
+#include <ospf/example/core/demo10.hpp>
+#include <ospf/example/core/demo11.hpp>
+#include <ospf/example/core/demo12.hpp>
+#include <ospf/example/core/demo13.hpp>
+#include <ospf/example/core/demo14.hpp>
+#include <ospf/example/core/demo15.hpp>
+#include <ospf/example/core/demo16.hpp>
+#include <ospf/example/core/demo17.hpp>
 #include <ospf/example/framework/demo1.hpp>
+#include <ospf/example/framework/demo2.hpp>
+#include <ospf/example/framework/demo3.hpp>
 #include <ospf/example/framework/demo4.hpp>
+#include <ospf/math/trivalent.hpp>
 
 using namespace ospf::example;
 namespace sym = ospf::math::symbol;
@@ -176,4 +193,85 @@ TEST(ExampleIntegration, FlightSchedulingModel) {
     StubSolver solver;
     auto result = solver.solve(model);
     EXPECT_EQ(result.status, SolveStatus::Optimal);
+}
+
+// ============================================================================
+// Core Demo 4-17 测试
+// ============================================================================
+
+TEST(CoreDemo, Demo4ResourceAlloc) { ospf::example::core::demo4(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo5Knapsack) { ospf::example::core::demo5(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo6) { ospf::example::core::demo6(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo7) { ospf::example::core::demo7(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo8) { ospf::example::core::demo8(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo9) { ospf::example::core::demo9(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo10) { ospf::example::core::demo10(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo11) { ospf::example::core::demo11(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo12) { ospf::example::core::demo12(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo13) { ospf::example::core::demo13(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo14) { ospf::example::core::demo14(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo15) { ospf::example::core::demo15(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo16) { ospf::example::core::demo16(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo17) { ospf::example::core::demo17(); EXPECT_TRUE(true); }
+
+// ============================================================================
+// Framework Demo 2-3 测试
+// ============================================================================
+
+TEST(FrameworkDemo, Demo2Loading) { ospf::example::framework::demo2_loading(); EXPECT_TRUE(true); }
+TEST(FrameworkDemo, Demo3SimpleLP) { ospf::example::framework::demo3_simple_lp(); EXPECT_TRUE(true); }
+
+// ============================================================================
+// Trivalent 测试
+// ============================================================================
+
+TEST(Trivalent, TrueAndTrue) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_true(Trivalent::True && Trivalent::True));
+}
+
+TEST(Trivalent, TrueAndFalse) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_false(Trivalent::True && Trivalent::False));
+}
+
+TEST(Trivalent, TrueOrFalse) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_true(Trivalent::True || Trivalent::False));
+}
+
+TEST(Trivalent, FalseOrFalse) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_false(Trivalent::False || Trivalent::False));
+}
+
+TEST(Trivalent, NotTrue) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_false(!Trivalent::True));
+}
+
+TEST(Trivalent, NotFalse) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_true(!Trivalent::False));
+}
+
+TEST(Trivalent, UnknownAndTrue) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_unknown(Trivalent::Unknown && Trivalent::True));
+}
+
+TEST(Trivalent, UnknownOrFalse) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_unknown(Trivalent::Unknown || Trivalent::False));
+}
+
+TEST(Trivalent, NotUnknown) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_unknown(!Trivalent::Unknown));
+}
+
+TEST(Trivalent, FromBool) {
+    using namespace ospf::math;
+    EXPECT_TRUE(is_true(from_bool(true)));
+    EXPECT_TRUE(is_false(from_bool(false)));
 }
