@@ -1248,3 +1248,93 @@ TEST(GanttDomain, BasicProductionAction) {
     EXPECT_DOUBLE_EQ(action.unit_cost(), 10.0);
     EXPECT_FALSE(action.discrete());
 }
+
+// ============================================================================
+// 1:1 Rust 移植：common/constraint_index.rs 测试 (4 tests)
+// 对齐 Rust gantt/domain/common/constraint_index.rs
+// 替换 GanttBulk 占位测试
+// ============================================================================
+
+#include <ospf/framework/gantt/domain/common/constraint_index.hpp>
+
+using namespace ospf::framework::gantt;
+
+// 对齐 Rust: test_constraint_index_map_register_and_lookup
+// 参考行为：register(task_compilation(2), "task_compilation_2", 5)
+//           → len==1, dual_index==5, name lookup works, dual_value==9.0
+TEST(GanttDomain, ConstraintIndexMapRegisterAndLookup) {
+    auto map = ConstraintIndexMap::create();
+    auto key = task_compilation_key(2);
+
+    map.register_key(key, "task_compilation_2", 5);
+
+    EXPECT_EQ(map.size(), 1u);
+    EXPECT_EQ(map.get(key)->dual_index, 5u);
+    EXPECT_EQ(map.get_by_name("task_compilation_2")->constraint_name, "task_compilation_2");
+
+    std::vector<double> duals = {0.0, 1.0, 2.0, 3.0, 4.0, 9.0};
+    auto val = map.dual_value(key, duals);
+    ASSERT_TRUE(val.has_value());
+    EXPECT_DOUBLE_EQ(*val, 9.0);
+}
+
+// 对齐 Rust: test_constraint_index_map_extract_task_shadow_prices
+// 参考行为：register 2 个 task 编译约束，索引 2 和 3；duals=[0,0,4,0]
+//           → task 0 的 shadow price == 4.0；task 1 和 2 不在 map 中
+TEST(GanttDomain, ConstraintIndexMapExtractTaskShadowPrices) {
+    auto map = ConstraintIndexMap::create();
+    map.register_key(task_compilation_key(0), "task_compilation_0", 2);
+    map.register_key(task_compilation_key(1), "task_compilation_1", 3);
+
+    std::vector<double> duals = {0.0, 0.0, 4.0, 0.0};
+
+    auto val0 = map.dual_value(task_compilation_key(0), duals);
+    ASSERT_TRUE(val0.has_value());
+    EXPECT_DOUBLE_EQ(*val0, 4.0);
+
+    auto val1 = map.dual_value(task_compilation_key(1), duals);
+    ASSERT_TRUE(val1.has_value());
+    EXPECT_DOUBLE_EQ(*val1, 0.0);  // duals[3] == 0.0 → Some(0.0)
+
+    auto val2 = map.dual_value(task_compilation_key(2), duals);
+    EXPECT_FALSE(val2.has_value());  // key 不存在 → None
+}
+
+// 对齐 Rust: test_constraint_index_map_register_task_compilation_constraints
+// 参考行为：name_to_idx 包含 task_compilation_0→4, task_compilation_2→6, unrelated→10
+//           → register 3 个 task → map.len()==2（排除 unrelated）
+TEST(GanttDomain, ConstraintIndexMapRegisterTaskCompilationConstraints) {
+    std::unordered_map<std::string, std::size_t> name_to_idx;
+    name_to_idx["task_compilation_0"] = 4;
+    name_to_idx["task_compilation_2"] = 6;
+    name_to_idx["unrelated"] = 10;
+
+    auto map = ConstraintIndexMap::create();
+    map.register_task_compilation_constraints(3, name_to_idx);
+
+    EXPECT_EQ(map.size(), 2u);
+
+    std::vector<double> duals = {0.0, 0.0, 0.0, 0.0, 1.5, 0.0, 2.5};
+    auto val0 = map.dual_value(task_compilation_key(0), duals);
+    ASSERT_TRUE(val0.has_value());
+    EXPECT_DOUBLE_EQ(*val0, 1.5);
+
+    auto val2 = map.dual_value(task_compilation_key(2), duals);
+    ASSERT_TRUE(val2.has_value());
+    EXPECT_DOUBLE_EQ(*val2, 2.5);
+}
+
+// 对齐 Rust: test_constraint_index_map_missing_dual_returns_none
+// 参考行为：register(executor_compilation("exec_1"), ..., 10) → dual_value 时 index>=duals.len() → None
+//           get_by_name("missing") → None
+TEST(GanttDomain, ConstraintIndexMapMissingDualReturnsNone) {
+    auto map = ConstraintIndexMap::create();
+    auto key = executor_compilation_key("exec_1");
+    map.register_key(key, "executor_compilation_exec_1", 10);
+
+    std::vector<double> duals = {1.0};
+    auto val = map.dual_value(key, duals);
+    EXPECT_FALSE(val.has_value());  // index 10 >= duals.len() → None
+
+    EXPECT_EQ(map.get_by_name("missing"), nullptr);
+}
