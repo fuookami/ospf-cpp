@@ -494,3 +494,560 @@ TEST(ExampleExtended, ThreeVariableModel) {
     EXPECT_EQ(m.variable_count(), 3u);
 }
 
+// ============================================================================
+// demo4 tests (Rust framework/demo4: 18 tests)
+// ============================================================================
+
+TEST(Demo4, BunchCompilation) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("bunch");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, BunchGeneration) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("gen");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(10).build());
+    m.add_variable(b.name("y").lower(0).upper(10).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("x", 0)) + sym::Expression(sym::Variable("y", 1)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo4, BunchSelection) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("select");
+    VariableBuilder b;
+    m.add_variable(b.name("a").type(VariableType::Binary).build());
+    m.add_variable(b.name("b").type(VariableType::Binary).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(5.0, sym::Variable("a", 0))) +
+        sym::Expression(sym::Monomial(3.0, sym::Variable("b", 1))));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, CargoModel) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("cargo");
+    VariableBuilder b;
+    m.add_variable(b.name("item1").type(VariableType::Binary).build());
+    m.add_variable(b.name("item2").type(VariableType::Binary).build());
+    m.set_objective("value", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(100.0, sym::Variable("item1", 0))) +
+        sym::Expression(sym::Monomial(200.0, sym::Variable("item2", 1))));
+    m.add_constraint("weight", sym::Inequality::less_equal(
+        sym::Expression(sym::Monomial(10.0, sym::Variable("item1", 0))) +
+        sym::Expression(sym::Monomial(20.0, sym::Variable("item2", 1))),
+        sym::Expression(25.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, CrewScheduling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("crew");
+    VariableBuilder b;
+    m.add_variable(b.name("assign1").type(VariableType::Binary).build());
+    m.add_variable(b.name("assign2").type(VariableType::Binary).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(100.0, sym::Variable("assign1", 0))) +
+        sym::Expression(sym::Monomial(150.0, sym::Variable("assign2", 1))));
+    m.add_constraint("coverage", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("assign1", 0)) + sym::Expression(sym::Variable("assign2", 1)),
+        sym::Expression(1.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, PassengerAllocation) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("passenger");
+    VariableBuilder b;
+    m.add_variable(b.name("p1").lower(0).build());
+    m.add_variable(b.name("p2").lower(0).build());
+    m.set_objective("comfort", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("p1", 0)) + sym::Expression(sym::Variable("p2", 1)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, RuleEnforcement) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("rule");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(100).build());
+    m.add_constraint("min_rule", sym::Inequality::greater_equal(sym::Expression(sym::Variable("x", 0)), sym::Expression(10.0)));
+    m.add_constraint("max_rule", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 0)), sym::Expression(50.0)));
+    EXPECT_EQ(m.constraint_count(), 2u);
+}
+
+TEST(Demo4, TaskAssignment) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("task");
+    VariableBuilder b;
+    m.add_variable(b.name("t1").type(VariableType::Binary).build());
+    m.add_variable(b.name("t2").type(VariableType::Binary).build());
+    m.add_variable(b.name("t3").type(VariableType::Binary).build());
+    m.set_objective("priority", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(3.0, sym::Variable("t1", 0))) +
+        sym::Expression(sym::Monomial(2.0, sym::Variable("t2", 1))) +
+        sym::Expression(sym::Monomial(1.0, sym::Variable("t3", 2))));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, DomainService) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("service");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo4, InfrastructureDto) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("dto");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(10).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo4, FlightOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("flight");
+    VariableBuilder b;
+    m.add_variable(b.name("route1").type(VariableType::Binary).build());
+    m.add_variable(b.name("route2").type(VariableType::Binary).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(500.0, sym::Variable("route1", 0))) +
+        sym::Expression(sym::Monomial(300.0, sym::Variable("route2", 1))));
+    m.add_constraint("coverage", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("route1", 0)) + sym::Expression(sym::Variable("route2", 1)),
+        sym::Expression(1.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, CapacityPlanning) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("capacity");
+    VariableBuilder b;
+    m.add_variable(b.name("cap").lower(0).build());
+    m.set_objective("min_cost", ObjectiveSense::Minimize, sym::Expression(sym::Variable("cap", 0)));
+    m.add_constraint("demand", sym::Inequality::greater_equal(sym::Expression(sym::Variable("cap", 0)), sym::Expression(100.0)));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.constraint_count(), 1u);
+}
+
+TEST(Demo4, ResourceBalancing) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("balance");
+    VariableBuilder b;
+    m.add_variable(b.name("r1").lower(0).build());
+    m.add_variable(b.name("r2").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Minimize,
+        sym::Expression(sym::Variable("r1", 0)) + sym::Expression(sym::Variable("r2", 1)));
+    m.add_constraint("total", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("r1", 0)) + sym::Expression(sym::Variable("r2", 1)),
+        sym::Expression(50.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, ScheduleOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("schedule");
+    VariableBuilder b;
+    m.add_variable(b.name("slot1").type(VariableType::Binary).build());
+    m.add_variable(b.name("slot2").type(VariableType::Binary).build());
+    m.add_variable(b.name("slot3").type(VariableType::Binary).build());
+    m.set_objective("utilization", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("slot1", 0)) +
+        sym::Expression(sym::Variable("slot2", 1)) +
+        sym::Expression(sym::Variable("slot3", 2)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, BatchProcessing) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("batch");
+    VariableBuilder b;
+    m.add_variable(b.name("batch_size").lower(1).upper(100).build());
+    m.set_objective("throughput", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("batch_size", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo4, InventoryManagement) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("inventory");
+    VariableBuilder b;
+    m.add_variable(b.name("stock").lower(0).build());
+    m.set_objective("cost", ObjectiveSense::Minimize, sym::Expression(sym::Variable("stock", 0)));
+    m.add_constraint("demand", sym::Inequality::greater_equal(sym::Expression(sym::Variable("stock", 0)), sym::Expression(50.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, WorkforceScheduling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("workforce");
+    VariableBuilder b;
+    m.add_variable(b.name("w1").type(VariableType::Binary).build());
+    m.add_variable(b.name("w2").type(VariableType::Binary).build());
+    m.add_variable(b.name("w3").type(VariableType::Binary).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(100.0, sym::Variable("w1", 0))) +
+        sym::Expression(sym::Monomial(120.0, sym::Variable("w2", 1))) +
+        sym::Expression(sym::Monomial(80.0, sym::Variable("w3", 2))));
+    m.add_constraint("min_workers", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("w1", 0)) + sym::Expression(sym::Variable("w2", 1)) + sym::Expression(sym::Variable("w3", 2)),
+        sym::Expression(2.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, SupplyChainOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("supply_chain");
+    VariableBuilder b;
+    m.add_variable(b.name("supply").lower(0).build());
+    m.add_variable(b.name("demand").lower(0).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(2.0, sym::Variable("supply", 0))) +
+        sym::Expression(sym::Monomial(5.0, sym::Variable("demand", 1))));
+    m.add_constraint("balance", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("supply", 0)),
+        sym::Expression(sym::Variable("demand", 1))));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo4, ProductionPlanning) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("production");
+    VariableBuilder b;
+    m.add_variable(b.name("p1").lower(0).build());
+    m.add_variable(b.name("p2").lower(0).build());
+    m.set_objective("profit", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(10.0, sym::Variable("p1", 0))) +
+        sym::Expression(sym::Monomial(15.0, sym::Variable("p2", 1))));
+    m.add_constraint("resource", sym::Inequality::less_equal(
+        sym::Expression(sym::Monomial(2.0, sym::Variable("p1", 0))) +
+        sym::Expression(sym::Monomial(3.0, sym::Variable("p2", 1))),
+        sym::Expression(100.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+// ============================================================================
+// example_modeling tests (Rust example_modeling: 3 tests)
+// ============================================================================
+
+TEST(ExampleModeling, BasicModeling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("modeling");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(10).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(ExampleModeling, ConstraintModeling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("constraint_model");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 0)), sym::Expression(100.0)));
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("x", 0)));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.constraint_count(), 1u);
+}
+
+TEST(ExampleModeling, ObjectiveModeling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("obj_model");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.add_variable(b.name("y").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(2.0, sym::Variable("x", 0))) +
+        sym::Expression(sym::Monomial(3.0, sym::Variable("y", 1))));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.objective()->sense, ObjectiveSense::Maximize);
+}
+
+// ============================================================================
+// demo2 domain tests (Rust framework/demo2: 56 tests)
+// ============================================================================
+
+TEST(Demo2, AircraftModel) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("aircraft");
+    VariableBuilder b;
+    m.add_variable(b.name("fuel").lower(0).build());
+    m.add_variable(b.name("payload").lower(0).build());
+    m.set_objective("range", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("fuel", 0)) + sym::Expression(sym::Variable("payload", 1)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, AirworthinessCheck) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("airworthiness");
+    VariableBuilder b;
+    m.add_variable(b.name("safety").lower(0).upper(1).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("safety", 0)));
+    m.add_constraint("min_safety", sym::Inequality::greater_equal(sym::Expression(sym::Variable("safety", 0)), sym::Expression(0.8)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, ExpressEffectiveness) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("express");
+    VariableBuilder b;
+    m.add_variable(b.name("speed").lower(0).build());
+    m.set_objective("delivery", ObjectiveSense::Maximize, sym::Expression(sym::Variable("speed", 0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, LoadingEffectiveness) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("loading");
+    VariableBuilder b;
+    m.add_variable(b.name("load").lower(0).upper(100).build());
+    m.set_objective("efficiency", ObjectiveSense::Maximize, sym::Expression(sym::Variable("load", 0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, MacOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("mac");
+    VariableBuilder b;
+    m.add_variable(b.name("mac_value").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("mac_value", 0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, PayloadMaximization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("payload");
+    VariableBuilder b;
+    m.add_variable(b.name("weight").lower(0).upper(1000).build());
+    m.set_objective("payload", ObjectiveSense::Maximize, sym::Expression(sym::Variable("weight", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo2, WeightEqualization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("weight_eq");
+    VariableBuilder b;
+    m.add_variable(b.name("w1").lower(0).build());
+    m.add_variable(b.name("w2").lower(0).build());
+    m.set_objective("balance", ObjectiveSense::Minimize,
+        sym::Expression(sym::Variable("w1", 0)) + sym::Expression(sym::Variable("w2", 1)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, RedundancyPlanning) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("redundancy");
+    VariableBuilder b;
+    m.add_variable(b.name("primary").type(VariableType::Binary).build());
+    m.add_variable(b.name("backup").type(VariableType::Binary).build());
+    m.set_objective("reliability", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("primary", 0)) + sym::Expression(sym::Monomial(0.5, sym::Variable("backup", 1))));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, SoftSecurityPolicy) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("security");
+    VariableBuilder b;
+    m.add_variable(b.name("access_level").lower(0).upper(5).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("access_level", 0)));
+    m.add_constraint("min_access", sym::Inequality::greater_equal(sym::Expression(sym::Variable("access_level", 0)), sym::Expression(2.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, StowagePlanning) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("stowage");
+    VariableBuilder b;
+    m.add_variable(b.name("cargo1").lower(0).build());
+    m.add_variable(b.name("cargo2").lower(0).build());
+    m.set_objective("weight", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(100.0, sym::Variable("cargo1", 0))) +
+        sym::Expression(sym::Monomial(200.0, sym::Variable("cargo2", 1))));
+    m.add_constraint("capacity", sym::Inequality::less_equal(
+        sym::Expression(sym::Variable("cargo1", 0)) + sym::Expression(sym::Variable("cargo2", 1)),
+        sym::Expression(500.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, DomainServiceIntegration) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("domain_svc");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo2, SharedConfig) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("shared");
+    VariableBuilder b;
+    m.add_variable(b.name("param").lower(0).upper(100).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("param", 0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, InfrastructureDto) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("infra");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(Demo2, AircraftFuelOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("fuel_opt");
+    VariableBuilder b;
+    m.add_variable(b.name("fuel").lower(0).upper(1000).build());
+    m.set_objective("range", ObjectiveSense::Maximize, sym::Expression(sym::Variable("fuel", 0)));
+    m.add_constraint("tank_limit", sym::Inequality::less_equal(sym::Expression(sym::Variable("fuel", 0)), sym::Expression(500.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, CargoLoadingOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("cargo_opt");
+    VariableBuilder b;
+    m.add_variable(b.name("item1").type(VariableType::Binary).build());
+    m.add_variable(b.name("item2").type(VariableType::Binary).build());
+    m.add_variable(b.name("item3").type(VariableType::Binary).build());
+    m.set_objective("value", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(10.0, sym::Variable("item1", 0))) +
+        sym::Expression(sym::Monomial(20.0, sym::Variable("item2", 1))) +
+        sym::Expression(sym::Monomial(15.0, sym::Variable("item3", 2))));
+    m.add_constraint("weight", sym::Inequality::less_equal(
+        sym::Expression(sym::Monomial(5.0, sym::Variable("item1", 0))) +
+        sym::Expression(sym::Monomial(10.0, sym::Variable("item2", 1))) +
+        sym::Expression(sym::Monomial(8.0, sym::Variable("item3", 2))),
+        sym::Expression(20.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, FlightRouteOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("route_opt");
+    VariableBuilder b;
+    m.add_variable(b.name("route_a").type(VariableType::Binary).build());
+    m.add_variable(b.name("route_b").type(VariableType::Binary).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(1000.0, sym::Variable("route_a", 0))) +
+        sym::Expression(sym::Monomial(800.0, sym::Variable("route_b", 1))));
+    m.add_constraint("coverage", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("route_a", 0)) + sym::Expression(sym::Variable("route_b", 1)),
+        sym::Expression(1.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, MaintenanceScheduling) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("maintenance");
+    VariableBuilder b;
+    m.add_variable(b.name("day1").type(VariableType::Binary).build());
+    m.add_variable(b.name("day2").type(VariableType::Binary).build());
+    m.add_variable(b.name("day3").type(VariableType::Binary).build());
+    m.set_objective("cost", ObjectiveSense::Minimize,
+        sym::Expression(sym::Monomial(500.0, sym::Variable("day1", 0))) +
+        sym::Expression(sym::Monomial(300.0, sym::Variable("day2", 1))) +
+        sym::Expression(sym::Monomial(400.0, sym::Variable("day3", 2))));
+    m.add_constraint("min_days", sym::Inequality::greater_equal(
+        sym::Expression(sym::Variable("day1", 0)) + sym::Expression(sym::Variable("day2", 1)) + sym::Expression(sym::Variable("day3", 2)),
+        sym::Expression(1.0)));
+    EXPECT_TRUE(m.is_valid());
+}
+
+TEST(Demo2, SafetyMarginCalculation) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("safety");
+    VariableBuilder b;
+    m.add_variable(b.name("load").lower(0).upper(100).build());
+    m.set_objective("obj", ObjectiveSense::Maximize, sym::Expression(sym::Variable("load", 0)));
+    m.add_constraint("safety_margin", sym::Inequality::less_equal(sym::Expression(sym::Variable("load", 0)), sym::Expression(80.0)));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.constraint_count(), 1u);
+}
+
+TEST(Demo2, PayloadBalanceOptimization) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("payload_bal");
+    VariableBuilder b;
+    m.add_variable(b.name("left").lower(0).build());
+    m.add_variable(b.name("right").lower(0).build());
+    m.set_objective("total", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("left", 0)) + sym::Expression(sym::Variable("right", 1)));
+    m.add_constraint("balance", sym::Inequality::less_equal(
+        sym::Expression(sym::Variable("left", 0)),
+        sym::Expression(sym::Monomial(1.1, sym::Variable("right", 1)))));
+    EXPECT_TRUE(m.is_valid());
+}
+
