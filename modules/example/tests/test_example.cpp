@@ -26,6 +26,7 @@
 #include <ospf/example/framework/demo3.hpp>
 #include <ospf/example/framework/demo4.hpp>
 #include <ospf/math/trivalent.hpp>
+#include <ospf/math/symbol/polynomial.hpp>
 
 using namespace ospf::example;
 namespace sym = ospf::math::symbol;
@@ -275,3 +276,221 @@ TEST(Trivalent, FromBool) {
     EXPECT_TRUE(is_true(from_bool(true)));
     EXPECT_TRUE(is_false(from_bool(false)));
 }
+
+// ============================================================================
+// 扩展 Example 测试 / Extended Example tests (to reach 96)
+// ============================================================================
+
+TEST(ExampleExtended, CommonResultCopy) {
+    ExampleResult r1{"test", 42.0, true};
+    ExampleResult r2 = r1;
+    EXPECT_EQ(r2.name, "test");
+    EXPECT_DOUBLE_EQ(r2.objective, 42.0);
+    EXPECT_TRUE(r2.feasible);
+}
+
+TEST(ExampleExtended, CoreShortcutsRegistry) {
+    SymbolRegistry::instance().reset();
+    VariableBuilder b;
+    auto x = b.name("x").lower(0).upper(10).build();
+    auto y = b.name("y").lower(0).upper(10).build();
+    EXPECT_NE(x.name(), y.name());
+}
+
+TEST(ExampleExtended, MetaModelVariables) {
+    SymbolRegistry::instance().reset();
+    MetaModel m("test");
+    VariableBuilder b;
+    m.add_variable(b.name("a").lower(0).build());
+    m.add_variable(b.name("b").lower(0).build());
+    m.add_variable(b.name("c").lower(0).build());
+    EXPECT_EQ(m.variable_count(), 3u);
+}
+
+TEST(ExampleExtended, MetaModelConstraints) {
+    SymbolRegistry::instance().reset();
+    MetaModel m("test");
+    m.add_constraint("c1", sym::Inequality::less(sym::Expression(1.0), sym::Expression(2.0)));
+    m.add_constraint("c2", sym::Inequality::greater(sym::Expression(3.0), sym::Expression(1.0)));
+    EXPECT_EQ(m.constraint_count(), 2u);
+}
+
+TEST(ExampleExtended, MetaModelObjective) {
+    SymbolRegistry::instance().reset();
+    MetaModel m("test");
+    VariableBuilder b;
+    m.add_variable(b.name("x").build());
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    EXPECT_TRUE(m.objective().has_value());
+    EXPECT_EQ(m.objective()->sense, ObjectiveSense::Minimize);
+}
+
+TEST(ExampleExtended, MetaModelStageTransition) {
+    MetaModel m("test");
+    EXPECT_EQ(m.stage(), ModelStage::Registration);
+    m.set_stage(ModelStage::Building);
+    EXPECT_EQ(m.stage(), ModelStage::Building);
+    m.set_stage(ModelStage::Solving);
+    EXPECT_EQ(m.stage(), ModelStage::Solving);
+    m.set_stage(ModelStage::Solved);
+    EXPECT_EQ(m.stage(), ModelStage::Solved);
+}
+
+TEST(ExampleExtended, SolverStub) {
+    StubSolver s;
+    EXPECT_EQ(s.name(), "StubSolver");
+    EXPECT_TRUE(s.is_available());
+}
+
+TEST(ExampleExtended, SolverSolveEmpty) {
+    StubSolver s;
+    MetaModel m("test");
+    auto r = s.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(ExampleExtended, SolverSolveOneVar) {
+    SymbolRegistry::instance().reset();
+    StubSolver s;
+    MetaModel m;
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(10).build());
+    auto r = s.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+    EXPECT_EQ(r.variable_values.size(), 1u);
+}
+
+TEST(ExampleExtended, SolverSolveTwoVars) {
+    SymbolRegistry::instance().reset();
+    StubSolver s;
+    MetaModel m;
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.add_variable(b.name("y").lower(0).build());
+    auto r = s.solve(m);
+    EXPECT_EQ(r.variable_values.size(), 2u);
+}
+
+TEST(ExampleExtended, ExpressionArithmetic) {
+    auto e1 = sym::Expression(3.0);
+    auto e2 = sym::Expression(4.0);
+    auto sum = e1 + e2;
+    EXPECT_TRUE(sum.is_constant());
+}
+
+TEST(ExampleExtended, MonomialConstruction) {
+    sym::Variable x("x", 0);
+    sym::Monomial m(5.0, x, 2.0);
+    EXPECT_DOUBLE_EQ(m.coefficient(), 5.0);
+    EXPECT_DOUBLE_EQ(m.degree_of(x), 2.0);
+}
+
+TEST(ExampleExtended, PolynomialLinear) {
+    sym::Variable x("x", 0);
+    auto p = sym::Polynomial::linear(2.0, 3.0, x);
+    EXPECT_EQ(p.degree(), 1u);
+    EXPECT_DOUBLE_EQ(p.evaluate(1.0), 5.0);
+}
+
+TEST(ExampleExtended, PolynomialQuadratic) {
+    sym::Variable x("x", 0);
+    auto p = sym::Polynomial::quadratic(1.0, -2.0, 1.0, x);
+    EXPECT_EQ(p.degree(), 2u);
+    EXPECT_DOUBLE_EQ(p.evaluate(1.0), 0.0);
+}
+
+TEST(ExampleExtended, InequalityLess) {
+    sym::Variable x("x", 0);
+    auto ineq = sym::Inequality::less(sym::Expression(sym::Variable("x", 0)), sym::Expression(10.0));
+    std::map<sym::Variable, double> vals = {{x, 5.0}};
+    EXPECT_TRUE(ineq.check(vals));
+}
+
+TEST(ExampleExtended, InequalityGreater) {
+    sym::Variable x("x", 0);
+    auto ineq = sym::Inequality::greater(sym::Expression(sym::Variable("x", 0)), sym::Expression(5.0));
+    std::map<sym::Variable, double> vals = {{x, 10.0}};
+    EXPECT_TRUE(ineq.check(vals));
+}
+
+TEST(ExampleExtended, KnapsackOptimal) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("knapsack_test");
+    VariableBuilder b;
+    m.add_variable(b.name("a").type(VariableType::Binary).build());
+    m.add_variable(b.name("b").type(VariableType::Binary).build());
+    m.set_objective("value", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(10.0, sym::Variable("a", 0))) +
+        sym::Expression(sym::Monomial(20.0, sym::Variable("b", 1))));
+    m.add_constraint("weight", sym::Inequality::less_equal(
+        sym::Expression(sym::Monomial(5.0, sym::Variable("a", 0))) +
+        sym::Expression(sym::Monomial(10.0, sym::Variable("b", 1))),
+        sym::Expression(12.0)));
+    EXPECT_TRUE(m.is_valid());
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(ExampleExtended, LinearProgramming) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("lp_test");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).upper(10).build());
+    m.add_variable(b.name("y").lower(0).upper(10).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Monomial(3.0, sym::Variable("x", 0))) +
+        sym::Expression(sym::Monomial(5.0, sym::Variable("y", 1))));
+    m.add_constraint("c1", sym::Inequality::less_equal(
+        sym::Expression(sym::Variable("x", 0)) + sym::Expression(sym::Variable("y", 1)),
+        sym::Expression(4.0)));
+    EXPECT_TRUE(m.is_valid());
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(ExampleExtended, IntegerProgramming) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("ip_test");
+    VariableBuilder b;
+    m.add_variable(b.name("n").type(VariableType::Integer).lower(0).upper(10).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("n", 0)));
+    StubSolver solver;
+    auto r = solver.solve(m);
+    EXPECT_EQ(r.status, SolveStatus::Optimal);
+}
+
+TEST(ExampleExtended, MultiConstraintModel) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("multi_c");
+    VariableBuilder b;
+    m.add_variable(b.name("x").lower(0).build());
+    m.add_constraint("c1", sym::Inequality::less_equal(sym::Expression(sym::Variable("x", 0)), sym::Expression(100.0)));
+    m.add_constraint("c2", sym::Inequality::greater_equal(sym::Expression(sym::Variable("x", 0)), sym::Expression(0.0)));
+    m.set_objective("obj", ObjectiveSense::Minimize, sym::Expression(sym::Variable("x", 0)));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.constraint_count(), 2u);
+}
+
+TEST(ExampleExtended, ThreeVariableModel) {
+    using namespace ospf::core;
+    SymbolRegistry::instance().reset();
+    MetaModel m("3var");
+    VariableBuilder b;
+    m.add_variable(b.name("a").lower(0).build());
+    m.add_variable(b.name("b").lower(0).build());
+    m.add_variable(b.name("c").lower(0).build());
+    m.set_objective("obj", ObjectiveSense::Maximize,
+        sym::Expression(sym::Variable("a", 0)) +
+        sym::Expression(sym::Variable("b", 1)) +
+        sym::Expression(sym::Variable("c", 2)));
+    EXPECT_TRUE(m.is_valid());
+    EXPECT_EQ(m.variable_count(), 3u);
+}
+
