@@ -1,3 +1,8 @@
 #pragma once
-/// Model flatten flattenable /// 1:1 å¯¹åº” Rust core/model/flatten/flattenable.rs
-namespace ospf::core { /* placeholder */ }
+/// Flattenable /// 1:1 ¶ÔÓ¦ Rust core/model/flatten/flattenable.rs
+namespace ospf::core {
+    template<typename T>
+    concept Flattenable = requires(T t) {
+        { t.flatten() };
+    };
+}

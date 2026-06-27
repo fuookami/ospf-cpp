@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain placement/placement_strategy /// 1:1 对应 Rust bpp3d/domain/placement/placement_strategy.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+#include <cstdint>
+namespace ospf::framework::bpp3d {
+    enum class PlacementStrategy : uint8_t { BottomLeft, BestFit, FirstFitDecreasing };
+}

@@ -1,3 +1,7 @@
 #pragma once
-/// Solver heuristic population /// 1:1 å¯¹åº” Rust core/solver/heuristic/population.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic population /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/population.rs
+#include <vector>
+#include "individual.hpp"
+namespace ospf::core {
+    struct Population { std::vector<Individual> individuals; int size() const { return individuals.size(); } };
+}

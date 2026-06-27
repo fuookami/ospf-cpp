@@ -1,3 +1,11 @@
 #pragma once
-/// Model model_builder /// 1:1 å¯¹åº” Rust/core/model/model_builder.rs
-namespace ospf::core { /* placeholder */ }
+/// Model builder /// 1:1 ¶ÔÓ¦ Rust core/model/model_builder.rs
+#include <ospf/core/model.hpp>
+#include <string>
+namespace ospf::core {
+    struct ModelBuilder {
+        std::string name = "unnamed";
+        ModelBuilder& set_name(const std::string& n) { name = n; return *this; }
+        [[nodiscard]] MetaModel build() { return MetaModel(name); }
+    };
+}

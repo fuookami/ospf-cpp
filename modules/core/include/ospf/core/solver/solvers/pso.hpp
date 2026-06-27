@@ -1,3 +1,6 @@
 #pragma once
-/// Solver solvers pso /// 1:1 å¯¹åº” Rust core/solver/solvers/pso.rs
-namespace ospf::core { /* placeholder */ }
+/// PSO solver /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/pso.rs
+#include <string>
+namespace ospf::core {
+    struct PsoConfig { int swarm_size = 50; int max_iterations = 100; double inertia = 0.7; };
+}

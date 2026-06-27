@@ -1,16 +1,24 @@
 #pragma once
-/// Rucklidge 混沌系统 / Rucklidge chaotic system
-/// 1:1 对应 Rust chaotic/rucklidge.rs
+/// Rucklidge ����ϵͳ / Rucklidge chaotic system
+/// 1:1 ��Ӧ Rust chaotic/rucklidge.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct RucklidgeParams {
+        double k = 2.0;
+        double a = 6.7;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {-S{k}*x + S{a}*y - y*z, x, -z + y*y};
         }
     };
+
     static constexpr char kRucklidgeName[] = "rucklidge";
     using RucklidgeSystem = ChaoticSystem3D<RucklidgeParams, kRucklidgeName>;
-}
+
+}  // namespace ospf::math::chaotic

@@ -1,3 +1,10 @@
 #pragma once
-/// Variable variable_id /// 1:1 对应 Rust core/variable/variable_id.rs
-namespace ospf::core { /* placeholder */ }
+/// Variable ID
+#include <cstdint>
+#include <string>
+namespace ospf::core {
+    struct VariableId {
+        std::uint64_t id = 0;
+        std::string name;
+    };
+}

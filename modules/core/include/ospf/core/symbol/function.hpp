@@ -1,3 +1,7 @@
 #pragma once
-/// Symbol function /// 1:1 å¯¹åº” Rust core/symbol/function.rs
-namespace ospf::core { /* placeholder */ }
+/// Symbol function /// 1:1 ¶ÔÓ¦ Rust/core/symbol/function.rs
+#include <string>
+#include <vector>
+namespace ospf::core {
+    struct SymbolFunction { std::string name; int arity = 0; };
+}

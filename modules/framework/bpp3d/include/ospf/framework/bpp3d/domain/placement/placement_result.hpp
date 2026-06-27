@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D domain placement/placement_result /// 1:1 对应 Rust bpp3d/domain/placement/placement_result.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+#include <string>
+namespace ospf::framework::bpp3d {
+    struct PlacementResult {
+        bool success = false;
+        double x = 0, y = 0, z = 0;
+        int rotation = 0;
+    };
+}

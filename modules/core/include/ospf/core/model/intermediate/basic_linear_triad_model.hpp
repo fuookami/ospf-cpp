@@ -1,3 +1,12 @@
 #pragma once
-/// Model intermediate basic_linear_triad_model /// 1:1 å¯¹åº” Rust core/model/intermediate/basic_linear_triad_model.rs
-namespace ospf::core { /* placeholder */ }
+/// Basic linear triad model /// 1:1 ¶ÔÓ¦ Rust core/model/intermediate/basic_linear_triad_model.rs
+#include <vector>
+#include <unordered_map>
+namespace ospf::core {
+    struct BasicLinearTriadModel {
+        std::vector<std::pair<std::size_t, double>> objective;
+        std::vector<std::vector<std::pair<std::size_t, double>>> constraints;
+        std::vector<double> rhs;
+        std::vector<int> sense;
+    };
+}

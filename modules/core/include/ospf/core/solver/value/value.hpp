@@ -1,3 +1,11 @@
 #pragma once
-/// Solver value/value /// 1:1 å¯¹åº” Rust/core/solver/value/value.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver value /// 1:1 ¶ÔÓ¦ Rust/core/solver/value/value.rs
+#include <optional>
+namespace ospf::core {
+    struct SolverValue {
+        double value = 0.0;
+        bool is_integer = false;
+        std::optional<double> lower;
+        std::optional<double> upper;
+    };
+}

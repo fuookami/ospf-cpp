@@ -1,3 +1,9 @@
 #pragma once
-/// Model registration /// 1:1 对应 Rust/core/model/registration.rs
-namespace ospf::core { /* placeholder */ }
+/// Model registration
+#include <string>
+namespace ospf::core {
+    struct ModelRegistration {
+        std::string name;
+        bool registered = false;
+    };
+}

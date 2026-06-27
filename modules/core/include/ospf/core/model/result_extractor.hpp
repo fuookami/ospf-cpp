@@ -1,3 +1,11 @@
 #pragma once
-/// Model result_extractor /// 1:1 å¯¹åº” Rust/core/model/result_extractor.rs
-namespace ospf::core { /* placeholder */ }
+/// Result extractor /// 1:1 ¶ÔÓ¦ Rust/core/model/result_extractor.rs
+#include <string>
+#include <unordered_map>
+namespace ospf::core {
+    struct ResultExtractor {
+        std::unordered_map<std::string, double> variable_values;
+        double objective_value = 0.0;
+        bool is_optimal = false;
+    };
+}

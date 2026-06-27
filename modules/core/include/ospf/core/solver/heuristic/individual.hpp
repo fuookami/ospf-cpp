@@ -1,3 +1,6 @@
 #pragma once
-/// Solver heuristic individual /// 1:1 å¯¹åº” Rust core/solver/heuristic/individual.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic individual /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/individual.rs
+#include <vector>
+namespace ospf::core {
+    struct Individual { std::vector<double> genes; double fitness = 0.0; };
+}

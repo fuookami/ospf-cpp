@@ -1,3 +1,7 @@
 #pragma once
-/// Symbol owned_symbol /// 1:1 å¯¹åº” Rust core/symbol/owned_symbol.rs
-namespace ospf::core { /* placeholder */ }
+/// Owned symbol /// 1:1 ¶ÔÓ¦ Rust/core/symbol/owned_symbol.rs
+#include <string>
+#include <memory>
+namespace ospf::core {
+    struct OwnedSymbol { std::string name; std::shared_ptr<void> data; };
+}

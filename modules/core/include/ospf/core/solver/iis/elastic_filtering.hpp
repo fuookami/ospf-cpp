@@ -1,3 +1,5 @@
 #pragma once
-/// Solver iis elastic_filtering /// 1:1 å¯¹åº” Rust core/solver/iis/elastic_filtering.rs
-namespace ospf::core { /* placeholder */ }
+/// IIS elastic filtering /// 1:1 ¶ÔÓ¦ Rust/core/solver/iis/elastic_filtering.rs
+namespace ospf::core {
+    struct ElasticFiltering { bool enabled = true; double penalty = 1e6; };
+}

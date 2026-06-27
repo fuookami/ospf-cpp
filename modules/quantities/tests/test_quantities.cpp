@@ -402,3 +402,46 @@ TEST(QuantitiesExtra, DimensionPowTwo) { auto area = DIM_LENGTH.pow(2); EXPECT_E
 TEST(QuantitiesExtra, DimensionPowThree) { auto vol = DIM_LENGTH.pow(3); EXPECT_EQ(vol, DIM_VOLUME); }
 TEST(QuantitiesExtra, QuantityDefaultConstruct) { Length l; EXPECT_DOUBLE_EQ(l.value(), 0.0); }
 TEST(QuantitiesExtra, MassDefaultConstruct) { Mass m; EXPECT_DOUBLE_EQ(m.value(), 0.0); }
+
+// ============================================================================
+// 维度安全测试 (Phase 7)
+// ============================================================================
+
+TEST(UnitSafety, SameDimensionConversion) {
+    auto result = safe_convert(1000.0, UNIT_METER, UNIT_KILOMETER);
+    EXPECT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 1.0);
+}
+
+TEST(UnitSafety, DifferentDimensionFails) {
+    auto result = safe_convert(1.0, UNIT_METER, UNIT_KILOGRAM);
+    EXPECT_FALSE(result.has_value());
+}
+
+TEST(UnitSafety, LengthToLength) {
+    auto result = safe_convert(100.0, UNIT_CENTIMETER, UNIT_METER);
+    EXPECT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 1.0);
+}
+
+TEST(UnitSafety, MassToMass) {
+    auto result = safe_convert(1000.0, UNIT_GRAM, UNIT_KILOGRAM);
+    EXPECT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 1.0);
+}
+
+TEST(UnitSafety, TimeToTime) {
+    auto result = safe_convert(3600.0, UNIT_SECOND, UNIT_HOUR);
+    EXPECT_TRUE(result.has_value());
+    EXPECT_DOUBLE_EQ(*result, 1.0);
+}
+
+TEST(UnitSafety, LengthToTimeFails) {
+    auto result = safe_convert(1.0, UNIT_METER, UNIT_SECOND);
+    EXPECT_FALSE(result.has_value());
+}
+
+TEST(UnitSafety, MassToLengthFails) {
+    auto result = safe_convert(1.0, UNIT_KILOGRAM, UNIT_METER);
+    EXPECT_FALSE(result.has_value());
+}

@@ -1,3 +1,11 @@
 #pragma once
-/// BPP3D domain result/packing_result /// 1:1 对应 Rust bpp3d/domain/result/packing_result.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+#include <string>
+#include <vector>
+namespace ospf::framework::bpp3d {
+    struct PackingResult {
+        int bin_count = 0;
+        double total_volume = 0.0;
+        double utilization = 0.0;
+        std::vector<std::string> packed_item_ids;
+    };
+}

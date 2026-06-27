@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D domain result/bin_result /// 1:1 对应 Rust bpp3d/domain/result/bin_result.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+namespace ospf::framework::bpp3d {
+    struct BinResult {
+        int bin_index = 0;
+        double used_volume = 0.0;
+        double utilization = 0.0;
+        int item_count = 0;
+    };
+}

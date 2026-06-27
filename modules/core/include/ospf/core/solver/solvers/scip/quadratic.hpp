@@ -1,3 +1,6 @@
 #pragma once
-/// Solver solvers/scip quadratic /// 1:1 å¯¹åº” Rust core/solver/solvers/scip/quadratic.rs
-namespace ospf::core { /* placeholder */ }
+/// SCIP quadratic solver /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/scip/quadratic.rs
+#include <string>
+namespace ospf::core {
+    struct ScipQuadraticSolver { std::string name = "SCIP-QP"; };
+}

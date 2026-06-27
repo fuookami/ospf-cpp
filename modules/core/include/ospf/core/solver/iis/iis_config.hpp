@@ -1,3 +1,8 @@
 #pragma once
-/// Solver iis iis_config /// 1:1 å¯¹åº” Rust core/solver/iis/iis_config.rs
-namespace ospf::core { /* placeholder */ }
+/// IIS config /// 1:1 ¶ÔÓ¦ Rust/core/solver/iis/iis_config.rs
+namespace ospf::core {
+    struct IisConfig {
+        bool verbose = false;
+        int max_iterations = 100;
+    };
+}

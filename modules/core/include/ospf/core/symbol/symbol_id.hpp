@@ -1,3 +1,7 @@
 #pragma once
-/// Symbol symbol_id /// 1:1 å¯¹åº” Rust core/symbol/symbol_id.rs
-namespace ospf::core { /* placeholder */ }
+/// Symbol ID /// 1:1 ¶ÔÓ¦ Rust core/symbol/symbol_id.rs
+#include <cstdint>
+#include <string>
+namespace ospf::core {
+    struct SymbolId { std::uint64_t id = 0; std::string name; };
+}

@@ -1,3 +1,9 @@
 #pragma once
-/// Model intermediate lp_export /// 1:1 å¯¹åº” Rust core/model/intermediate/lp_export.rs
-namespace ospf::core { /* placeholder */ }
+/// LP export /// 1:1 ¶ÔÓ¦ Rust core/model/intermediate/lp_export.rs
+#include <string>
+namespace ospf::core {
+    struct LpExportConfig {
+        std::string format = "lp";
+        bool include_names = true;
+    };
+}

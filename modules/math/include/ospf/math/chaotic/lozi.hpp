@@ -1,14 +1,24 @@
 #pragma once
-/// Lozi æ··æ²Œç³»ç»Ÿ / Lozi chaotic system
-/// 1:1 å¯¹åº” Rust chaotic/lozi.rs
+/// Lozi »ìãçÏµÍ³ / Lozi chaotic system
+/// 1:1 ¶ÔÓ¦ Rust chaotic/lozi.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct LoziParams {
+        double a = 1.7;
+        double b = 0.5;
+
         template<typename S = double>
         [[nodiscard]] Point2<S> derivatives(const Point2<S>& state) const {
-            return {S{0}, S{0}};
+            S x = state[0], y = state[1];
+            return {S{1} - S{a}*std::abs(x) + y, S{b}*x};
         }
     };
+
     static constexpr char kLoziName[] = "lozi";
     using LoziSystem = ChaoticSystem2D<LoziParams, kLoziName>;
-}
+
+}  // namespace ospf::math::chaotic

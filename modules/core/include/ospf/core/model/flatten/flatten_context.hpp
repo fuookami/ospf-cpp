@@ -1,3 +1,10 @@
 #pragma once
-/// Model flatten flatten_context /// 1:1 å¯¹åº” Rust core/model/flatten/flatten_context.rs
-namespace ospf::core { /* placeholder */ }
+/// Flatten context /// 1:1 ¶ÔÓ¦ Rust/core/model/flatten/flatten_context.rs
+#include <string>
+#include <unordered_map>
+namespace ospf::core {
+    struct FlattenContext {
+        std::unordered_map<std::size_t, double> variable_values;
+        int depth = 0;
+    };
+}

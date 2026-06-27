@@ -1,3 +1,6 @@
 #pragma once
-/// Model status /// 1:1 对应 Rust core/model/status.rs
-namespace ospf::core { /* placeholder */ }
+/// Model status
+#include <cstdint>
+namespace ospf::core {
+    enum class ModelStatus : uint8_t { Created, Building, Solving, Solved, Error };
+}

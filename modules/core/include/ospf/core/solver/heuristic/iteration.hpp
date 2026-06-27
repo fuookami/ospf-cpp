@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic iteration /// 1:1 å¯¹åº” Rust core/solver/heuristic/iteration.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic iteration /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/iteration.rs
+namespace ospf::core {
+    struct IterationResult { int generation = 0; double best_fitness = 0.0; };
+}

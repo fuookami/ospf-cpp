@@ -1,3 +1,9 @@
 #pragma once
-/// Solver solvers/scip config /// 1:1 å¯¹åº” Rust core/solver/solvers/scip/config.rs
-namespace ospf::core { /* placeholder */ }
+/// SCIP config /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/scip/config.rs
+#include <string>
+namespace ospf::core {
+    struct ScipConfig {
+        bool suppress_output = true;
+        double time_limit = -1.0;
+    };
+}

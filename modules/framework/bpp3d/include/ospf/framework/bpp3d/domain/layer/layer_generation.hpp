@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D domain layer/layer_generation /// 1:1 对应 Rust bpp3d/domain/layer/layer_generation.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+#include <vector>
+namespace ospf::framework::bpp3d {
+    struct LayerGenerationRequest {
+        double width = 0.0;
+        double depth = 0.0;
+        int max_items = 100;
+    };
+}

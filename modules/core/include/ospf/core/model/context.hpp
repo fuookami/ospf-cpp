@@ -1,3 +1,9 @@
 #pragma once
-/// Model context /// 1:1 对应 Rust/core/model/context.rs
-namespace ospf::core { /* placeholder */ }
+/// Model context
+#include <string>
+namespace ospf::core {
+    struct ModelContext {
+        std::string model_name;
+        int iteration = 0;
+    };
+}

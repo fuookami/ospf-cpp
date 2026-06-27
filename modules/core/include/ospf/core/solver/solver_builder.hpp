@@ -1,3 +1,9 @@
 #pragma once
-/// Solver solver_builder /// 1:1 å¯¹åº” Rust/core/solver/solver_builder.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver builder /// 1:1 ¶ÔÓ¦ Rust/core/solver/solver_builder.rs
+#include <string>
+namespace ospf::core {
+    struct SolverBuilder {
+        std::string solver_name = "auto";
+        SolverBuilder& set_name(const std::string& n) { solver_name = n; return *this; }
+    };
+}

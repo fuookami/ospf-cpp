@@ -1,3 +1,10 @@
 #pragma once
-/// Model mechanism constraint_group /// 1:1 å¯¹åº” Rust core/model/mechanism/constraint_group.rs
-namespace ospf::core { /* placeholder */ }
+/// Constraint group /// 1:1 ¶ÔÓ¦ Rust/core/model/mechanism/constraint_group.rs
+#include <string>
+#include <vector>
+namespace ospf::core {
+    struct ConstraintGroup {
+        std::string name;
+        std::vector<std::string> constraint_names;
+    };
+}

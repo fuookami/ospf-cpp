@@ -1,3 +1,10 @@
 #pragma once
-/// Model basic_model /// 1:1 对应 Rust core/model/basic_model.rs
-namespace ospf::core { /* placeholder */ }
+/// Basic model
+#include <string>
+namespace ospf::core {
+    struct BasicModel {
+        std::string name;
+        int variable_count = 0;
+        int constraint_count = 0;
+    };
+}

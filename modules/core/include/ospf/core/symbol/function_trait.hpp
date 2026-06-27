@@ -1,3 +1,10 @@
 #pragma once
-/// Symbol function_trait /// 1:1 å¯¹åº” Rust core/symbol/function_trait.rs
-namespace ospf::core { /* placeholder */ }
+/// Function trait /// 1:1 ¶ÔÓ¦ Rust core/symbol/function_trait.rs
+#include <string>
+namespace ospf::core {
+    template<typename T>
+    concept FunctionTrait = requires(T t) {
+        { t.name() } -> std::convertible_to<std::string>;
+        { t.arity() } -> std::convertible_to<int>;
+    };
+}

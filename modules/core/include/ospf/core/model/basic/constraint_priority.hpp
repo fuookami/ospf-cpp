@@ -1,3 +1,8 @@
 #pragma once
-/// Model basic constraint_priority /// 1:1 å¯¹åº” Rust core/model/basic/constraint_priority.rs
-namespace ospf::core { /* placeholder */ }
+/// Constraint priority /// 1:1 ¶ÔÓ¦ Rust/core/model/basic/constraint_priority.rs
+#include <cstdint>
+namespace ospf::core {
+    enum class ConstraintPriority : uint8_t {
+        Low = 0, Normal = 1, High = 2, Critical = 3
+    };
+}

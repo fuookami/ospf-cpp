@@ -1,3 +1,11 @@
 #pragma once
-/// Solver iis/iis /// 1:1 å¯¹åº” Rust/core/solver/iis/iis.rs
-namespace ospf::core { /* placeholder */ }
+/// IIS /// 1:1 ¶ÔÓ¦ Rust/core/solver/iis/iis.rs
+#include <vector>
+#include <string>
+namespace ospf::core {
+    struct IisResult {
+        bool found = false;
+        std::vector<std::string> constraint_names;
+        std::vector<std::string> variable_names;
+    };
+}

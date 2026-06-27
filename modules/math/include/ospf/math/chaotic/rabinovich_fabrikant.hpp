@@ -1,16 +1,24 @@
 #pragma once
-/// RabinovichFabrikant 混沌系统 / RabinovichFabrikant chaotic system
-/// 1:1 对应 Rust chaotic/rabinovich_fabrikant.rs
+/// RabinovichFabrikant ����ϵͳ / RabinovichFabrikant chaotic system
+/// 1:1 ��Ӧ Rust chaotic/rabinovich_fabrikant.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct RabinovichFabrikantParams {
+        double a = 1.1;
+        double b = 0.87;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {y*(z - S{1} + x*x) + S{a}*x, x*(z - S{1} + x*x) + S{a}*y, -S{b}*z + x*y};
         }
     };
+
     static constexpr char kRabinovichFabrikantName[] = "rabinovich_fabrikant";
     using RabinovichFabrikantSystem = ChaoticSystem3D<RabinovichFabrikantParams, kRabinovichFabrikantName>;
-}
+
+}  // namespace ospf::math::chaotic

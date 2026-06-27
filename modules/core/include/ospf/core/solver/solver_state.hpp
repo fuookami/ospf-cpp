@@ -1,3 +1,6 @@
 #pragma once
-/// Solver solver_state /// 1:1 å¯¹åº” Rust/core/solver/solver_state.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver state /// 1:1 ¶ÔÓ¦ Rust/core/solver/solver_state.rs
+#include <cstdint>
+namespace ospf::core {
+    enum class SolverState : uint8_t { Idle, Running, Completed, Error };
+}

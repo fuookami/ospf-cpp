@@ -1,14 +1,24 @@
 #pragma once
-/// KaplanYorke æ··æ²Œç³»ç»Ÿ / KaplanYorke chaotic system
-/// 1:1 å¯¹åº” Rust chaotic/kaplan_yorke.rs
+/// KaplanYorke »ìãçÏµÍ³ / KaplanYorke chaotic system
+/// 1:1 ¶ÔÓ¦ Rust chaotic/kaplan_yorke.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct KaplanYorkeParams {
+        double a = 0.1;
+        double b = 0.1;
+
         template<typename S = double>
-        [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            return {S{0}, S{0}, S{0}};
+        [[nodiscard]] Point2<S> derivatives(const Point2<S>& state) const {
+            S x = state[0], y = state[1];
+            return {S{a}*x, -y - x*x};
         }
     };
+
     static constexpr char kKaplanYorkeName[] = "kaplan_yorke";
-    using KaplanYorkeSystem = ChaoticSystem3D<KaplanYorkeParams, kKaplanYorkeName>;
-}
+    using KaplanYorkeSystem = ChaoticSystem2D<KaplanYorkeParams, kKaplanYorkeName>;
+
+}  // namespace ospf::math::chaotic

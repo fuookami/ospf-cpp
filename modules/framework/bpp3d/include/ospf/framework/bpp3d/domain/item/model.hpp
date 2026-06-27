@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D domain/item/model /// 1:1 对应 Rust bpp3d/domain/item/model.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// BPP3D domain/item/model �ۺ�ͷ
+#include <ospf/framework/bpp3d/domain/item/item.hpp>
+#include <ospf/framework/bpp3d/domain/item/item_builder.hpp>
+#include <ospf/framework/bpp3d/domain/item/item_type.hpp>
+#include <ospf/framework/bpp3d/domain/item/cargo_attribute.hpp>
+#include <ospf/framework/bpp3d/domain/item/package.hpp>
+#include <ospf/framework/bpp3d/domain/item/package_attribute.hpp>
+#include <ospf/framework/bpp3d/domain/item/stowage.hpp>

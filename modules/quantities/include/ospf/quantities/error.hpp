@@ -1,3 +1,9 @@
 #pragma once
-/// Quantities error /// 1:1 å¯¹åº” Rust quantities/error.rs
-namespace ospf::quantities { /* placeholder */ }
+/// Quantities error /// 1:1 ¶ÔÓ¦ Rust quantities/error.rs
+#include <string>
+namespace ospf::quantities {
+    struct QuantityError {
+        std::string message;
+        std::string code;
+    };
+}

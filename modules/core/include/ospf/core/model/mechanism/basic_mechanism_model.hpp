@@ -1,3 +1,10 @@
 #pragma once
-/// Model mechanism basic_mechanism_model /// 1:1 å¯¹åº” Rust core/model/mechanism/basic_mechanism_model.rs
-namespace ospf::core { /* placeholder */ }
+/// Basic mechanism model /// 1:1 ¶ÔÓ¦ Rust/core/model/mechanism/basic_mechanism_model.rs
+#include <string>
+#include <vector>
+namespace ospf::core {
+    struct BasicMechanismModel {
+        std::string name;
+        std::vector<std::string> constraint_names;
+    };
+}

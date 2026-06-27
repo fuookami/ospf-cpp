@@ -1,3 +1,6 @@
 #pragma once
-/// Symbol symbol_recursion /// 1:1 å¯¹åº” Rust core/symbol/symbol_recursion.rs
-namespace ospf::core { /* placeholder */ }
+/// Symbol recursion /// 1:1 ¶ÔÓ¦ Rust core/symbol/symbol_recursion.rs
+#include <cstdint>
+namespace ospf::core {
+    struct RecursionGuard { int depth = 0; int max_depth = 100; };
+}

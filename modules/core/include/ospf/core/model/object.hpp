@@ -1,3 +1,9 @@
 #pragma once
-/// Model object /// 1:1 对应 Rust core/model/object.rs
-namespace ospf::core { /* placeholder */ }
+/// Model object
+#include <string>
+namespace ospf::core {
+    struct ModelObject {
+        std::string name;
+        std::string type;
+    };
+}

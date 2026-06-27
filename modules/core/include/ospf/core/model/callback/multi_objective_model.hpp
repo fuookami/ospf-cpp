@@ -1,3 +1,10 @@
 #pragma once
-/// Model callback multi_objective_model /// 1:1 å¯¹åº” Rust core/model/callback/multi_objective_model.rs
-namespace ospf::core { /* placeholder */ }
+/// Multi-objective model /// 1:1 ¶ÔÓ¦ Rust/core/model/callback/multi_objective_model.rs
+#include <vector>
+#include <string>
+namespace ospf::core {
+    struct MultiObjectiveModel {
+        std::vector<std::string> objective_names;
+        std::vector<double> weights;
+    };
+}

@@ -1,4 +1,10 @@
 #pragma once
-/// Unit system /// 1:1 å¯¹åº” Rust quantities/unit/system.rs
-#include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+/// Unit system /// 1:1 ¶ÔÓ¦ Rust quantities/unit/system.rs
+#include <string>
+#include <vector>
+namespace ospf::quantities {
+    struct UnitSystem {
+        std::string name;
+        std::vector<std::string> unit_names;
+    };
+}

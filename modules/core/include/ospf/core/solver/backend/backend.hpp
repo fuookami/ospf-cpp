@@ -1,3 +1,9 @@
 #pragma once
-/// Solver backend/backend /// 1:1 å¯¹åº” Rust/core/solver/backend/backend.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver backend /// 1:1 ¶ÔÓ¦ Rust core/solver/backend/backend.rs
+#include <string>
+namespace ospf::core {
+    struct SolverBackendConfig {
+        std::string name;
+        bool available = false;
+    };
+}

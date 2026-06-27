@@ -1,4 +1,10 @@
 #pragma once
-/// Unit conversion_value /// 1:1 å¯¹åº” Rust quantities/unit/conversion_value.rs
-#include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+/// Unit conversion value /// 1:1 ¶ÔÓ¦ Rust quantities/unit/conversion_value.rs
+#include <optional>
+namespace ospf::quantities {
+    struct ConversionValue {
+        double factor = 1.0;
+        double offset = 0.0;
+        [[nodiscard]] double convert(double v) const { return v * factor + offset; }
+    };
+}

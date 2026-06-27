@@ -1,3 +1,8 @@
 #pragma once
-/// BPP3D domain placement/placement_validator /// 1:1 对应 Rust bpp3d/domain/placement/placement_validator.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+namespace ospf::framework::bpp3d {
+    struct PlacementValidator {
+        bool check_overlap = true;
+        bool check_bounds = true;
+        bool check_weight = true;
+    };
+}

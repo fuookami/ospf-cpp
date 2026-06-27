@@ -1,3 +1,6 @@
 #pragma once
-/// Solver solver_ext /// 1:1 å¯¹åº” Rust core/solver/solver_ext.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver ext /// 1:1 ¶ÔÓ¦ Rust/core/solver/solver_ext.rs
+#include <string>
+namespace ospf::core {
+    struct SolverExt { bool supports_mip = true; bool supports_qp = false; };
+}

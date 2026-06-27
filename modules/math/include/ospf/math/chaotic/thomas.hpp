@@ -1,16 +1,23 @@
 #pragma once
-/// Thomas 混沌系统 / Thomas chaotic system
-/// 1:1 对应 Rust chaotic/thomas.rs
+/// Thomas ����ϵͳ / Thomas chaotic system
+/// 1:1 ��Ӧ Rust chaotic/thomas.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct ThomasParams {
+        double b = 0.21;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {std::sin(y) - S{b}*x, std::sin(z) - S{b}*y, std::sin(x) - S{b}*z};
         }
     };
+
     static constexpr char kThomasName[] = "thomas";
     using ThomasSystem = ChaoticSystem3D<ThomasParams, kThomasName>;
-}
+
+}  // namespace ospf::math::chaotic

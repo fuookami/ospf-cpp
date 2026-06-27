@@ -1,3 +1,10 @@
 #pragma once
-/// Model basic configuration /// 1:1 å¯¹åº” Rust core/model/basic/configuration.rs
-namespace ospf::core { /* placeholder */ }
+/// Model configuration /// 1:1 ¶ÔÓ¦ Rust/core/model/basic/configuration.rs
+#include <string>
+namespace ospf::core {
+    struct ModelConfiguration {
+        std::string name;
+        double tolerance = 1e-6;
+        int max_iterations = 1000;
+    };
+}

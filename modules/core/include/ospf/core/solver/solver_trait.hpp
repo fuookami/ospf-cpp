@@ -1,3 +1,9 @@
 #pragma once
-/// Solver solver_trait /// 1:1 å¯¹åº” Rust/core/solver/solver_trait.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver trait /// 1:1 ¶ÔÓ¦ Rust/core/solver/solver_trait.rs
+#include <ospf/core/solver/solve_result.hpp>
+namespace ospf::core {
+    template<typename T>
+    concept SolverTrait = requires(T t) {
+        { t.name() };
+    };
+}

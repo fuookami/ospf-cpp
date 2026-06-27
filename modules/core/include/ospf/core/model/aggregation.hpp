@@ -1,3 +1,10 @@
 #pragma once
-/// Model aggregation /// 1:1 对应 Rust/core/model/aggregation.rs
-namespace ospf::core { /* placeholder */ }
+/// Model aggregation
+#include <string>
+#include <vector>
+namespace ospf::core {
+    struct ModelAggregation {
+        std::string name;
+        std::vector<std::string> model_names;
+    };
+}

@@ -1,16 +1,24 @@
 #pragma once
-/// NBody 混沌系统 / NBody chaotic system
-/// 1:1 对应 Rust chaotic/n_body.rs
+/// NBody ����ϵͳ / NBody chaotic system
+/// 1:1 ��Ӧ Rust chaotic/n_body.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct NBodyParams {
+        double G = 1.0;
+        double n = 3.0;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {-S{G}*x, -S{G}*y, -S{G}*z};
         }
     };
+
     static constexpr char kNBodyName[] = "n_body";
     using NBodySystem = ChaoticSystem3D<NBodyParams, kNBodyName>;
-}
+
+}  // namespace ospf::math::chaotic

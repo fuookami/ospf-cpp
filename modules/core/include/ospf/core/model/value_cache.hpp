@@ -1,3 +1,10 @@
 #pragma once
-/// Model value_cache /// 1:1 对应 Rust core/model/value_cache.rs
-namespace ospf::core { /* placeholder */ }
+/// Value cache
+#include <unordered_map>
+#include <cstdint>
+namespace ospf::core {
+    struct ValueCache {
+        std::unordered_map<std::uint64_t, double> cache;
+        void clear() { cache.clear(); }
+    };
+}

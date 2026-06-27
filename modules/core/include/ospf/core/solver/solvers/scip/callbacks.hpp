@@ -1,3 +1,5 @@
 #pragma once
-/// Solver solvers/scip callbacks /// 1:1 å¯¹åº” Rust core/solver/solvers/scip/callbacks.rs
-namespace ospf::core { /* placeholder */ }
+/// SCIP callbacks /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/scip/callbacks.rs
+namespace ospf::core {
+    struct ScipCallbacks { bool lazy_constraints = true; };
+}

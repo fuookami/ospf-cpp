@@ -1,3 +1,8 @@
 #pragma once
-/// Model flatten lazy_context /// 1:1 å¯¹åº” Rust core/model/flatten/lazy_context.rs
-namespace ospf::core { /* placeholder */ }
+/// Lazy context /// 1:1 ¶ÔÓ¦ Rust/core/model/flatten/lazy_context.rs
+#include <functional>
+namespace ospf::core {
+    struct LazyContext {
+        std::function<double()> evaluator;
+    };
+}

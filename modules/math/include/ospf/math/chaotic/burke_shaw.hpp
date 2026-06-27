@@ -1,16 +1,24 @@
 #pragma once
-/// BurkeShaw 混沌系统 / BurkeShaw chaotic system
-/// 1:1 对应 Rust chaotic/burke_shaw.rs
+/// BurkeShaw ����ϵͳ / BurkeShaw chaotic system
+/// 1:1 ��Ӧ Rust chaotic/burke_shaw.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct BurkeShawParams {
+        double s = 10.0;
+        double v = 4.267;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {-S{s}*(x+y), -y - S{s}*x*z, S{s}*x*y + S{v}};
         }
     };
+
     static constexpr char kBurkeShawName[] = "burke_shaw";
     using BurkeShawSystem = ChaoticSystem3D<BurkeShawParams, kBurkeShawName>;
-}
+
+}  // namespace ospf::math::chaotic

@@ -1,3 +1,3 @@
 #pragma once
-/// Solver solvers/solvers /// 1:1 å¯¹åº” Rust/core/solver/solvers/solvers.rs
-namespace ospf::core { /* placeholder */ }
+/// Solvers /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/mod.rs
+#include <ospf/core/solver/solvers/gurobi/solver.hpp>

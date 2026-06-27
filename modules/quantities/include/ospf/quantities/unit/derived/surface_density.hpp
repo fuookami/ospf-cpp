@@ -1,4 +1,6 @@
 #pragma once
-/// Derived unit: surface_density /// 1:1 对应 Rust quantities/unit/derived/surface_density.rs
 #include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+namespace ospf::quantities {
+    inline constexpr Dimension DIM_SURFACE_DENSITY = {1, -2, 0, 0, 0, 0, 0};
+    inline const Unit UNIT_KILOGRAM_PER_SQUARE_METER = {DIM_SURFACE_DENSITY, 1.0, "kilogram per square meter", "kg/m2"};
+}

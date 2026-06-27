@@ -1,16 +1,26 @@
 #pragma once
 /// LorenzStenflo 混沌系统 / LorenzStenflo chaotic system
-/// 1:1 对应 Rust chaotic/lorenz_stenflo.rs
+/// 4D 系统 / 4D system
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct LorenzStenfloParams {
+        double a = 10.0;
+        double b = 28.0;
+        double c = 8.0/3.0;
+        double d = 1.0;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {S{a}*(y - x), S{b}*x - y - x*z, x*y - S{c}*z};
         }
     };
+
     static constexpr char kLorenzStenfloName[] = "lorenz_stenflo";
     using LorenzStenfloSystem = ChaoticSystem3D<LorenzStenfloParams, kLorenzStenfloName>;
-}
+
+}  // namespace ospf::math::chaotic

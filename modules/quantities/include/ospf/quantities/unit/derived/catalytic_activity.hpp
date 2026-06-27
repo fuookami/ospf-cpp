@@ -1,4 +1,6 @@
 #pragma once
-/// Derived unit: catalytic_activity /// 1:1 对应 Rust quantities/unit/derived/catalytic_activity.rs
 #include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+namespace ospf::quantities {
+    inline constexpr Dimension DIM_CATALYTIC_ACTIVITY = {0, 0, -1, 0, 0, 1, 0};
+    inline const Unit UNIT_KATAL = {DIM_CATALYTIC_ACTIVITY, 1.0, "katal", "kat"};
+}

@@ -1,3 +1,9 @@
 #pragma once
-/// Variable auto_variable /// 1:1 对应 Rust core/variable/auto_variable.rs
-namespace ospf::core { /* placeholder */ }
+/// Auto variable
+#include <ospf/core/variable.hpp>
+namespace ospf::core {
+    struct AutoVariable {
+        Variable var;
+        bool auto_generated = true;
+    };
+}

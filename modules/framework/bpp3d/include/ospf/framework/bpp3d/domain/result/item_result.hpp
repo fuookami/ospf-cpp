@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D domain result/item_result /// 1:1 对应 Rust bpp3d/domain/result/item_result.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+namespace ospf::framework::bpp3d {
+    struct ItemResult {
+        int item_index = 0;
+        int bin_index = -1;
+        double x = 0, y = 0, z = 0;
+        bool packed = false;
+    };
+}

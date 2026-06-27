@@ -1,3 +1,9 @@
 #pragma once
-/// Model flatten cache_key /// 1:1 å¯¹åº” Rust core/model/flatten/cache_key.rs
-namespace ospf::core { /* placeholder */ }
+/// Flatten cache key /// 1:1 ¶ÔÓ¦ Rust/core/model/flatten/cache_key.rs
+#include <cstdint>
+namespace ospf::core {
+    struct FlattenCacheKey {
+        std::uint64_t symbol_id = 0;
+        [[nodiscard]] bool operator==(const FlattenCacheKey&) const = default;
+    };
+}

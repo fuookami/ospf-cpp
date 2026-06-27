@@ -1,3 +1,12 @@
 #pragma once
-/// Model mechanism /// 1:1 瀵瑰簲 Rust/core/model/mechanism.rs
-namespace ospf::core { /* placeholder */ }
+/// Model mechanism /// 1:1 对应 Rust core/model/mechanism.rs
+#include <string>
+#include <vector>
+namespace ospf::core {
+    /// 机制 / Mechanism
+    struct Mechanism {
+        std::string name;
+        std::vector<std::string> constraint_names;
+        std::vector<std::string> variable_names;
+    };
+}

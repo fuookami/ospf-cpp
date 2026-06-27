@@ -1,3 +1,9 @@
 #pragma once
-/// Model intermediate quadratic_tetrad_model_view /// 1:1 å¯¹åº” Rust core/model/intermediate/quadratic_tetrad_model_view.rs
-namespace ospf::core { /* placeholder */ }
+/// Quadratic tetrad model view /// 1:1 ¶ÔÓ¦ Rust/core/model/intermediate/quadratic_tetrad_model_view.rs
+#include <vector>
+namespace ospf::core {
+    struct QuadraticTetradModelView {
+        std::size_t variable_count = 0;
+        std::size_t constraint_count = 0;
+    };
+}

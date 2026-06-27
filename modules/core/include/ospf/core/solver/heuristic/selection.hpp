@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic selection /// 1:1 å¯¹åº” Rust core/solver/heuristic/selection.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic selection /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/selection.rs
+namespace ospf::core {
+    struct SelectionConfig { int tournament_size = 3; };
+}

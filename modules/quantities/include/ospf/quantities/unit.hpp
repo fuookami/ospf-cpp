@@ -46,11 +46,20 @@ namespace ospf::quantities {
     inline const Unit UNIT_HOUR       = {DIM_TIME,    3600.0, "hour",       "h"};
     inline const Unit UNIT_MINUTE     = {DIM_TIME,    60.0,   "minute",     "min"};
 
-    /// 单位换算 / Unit conversion
+    /// 单位换算（不检查维度） / Unit conversion (no dimension check)
     [[nodiscard]] inline double convert(double value, const Unit& from, const Unit& to) {
         // 先转为 SI，再转为目标单位
         double si_value = value * from.to_si_factor;
         return si_value / to.to_si_factor;
+    }
+
+    /// 安全单位换算（检查维度） / Safe unit conversion (with dimension check)
+    /// 不同维度返回 nullopt
+    [[nodiscard]] inline std::optional<double> safe_convert(double value, const Unit& from, const Unit& to) {
+        if (from.dimension != to.dimension) {
+            return std::nullopt;  // 维度不匹配 / Dimension mismatch
+        }
+        return convert(value, from, to);
     }
 
     /// UnitTrait：单位必须满足的概念 / UnitTrait: concept that units must satisfy

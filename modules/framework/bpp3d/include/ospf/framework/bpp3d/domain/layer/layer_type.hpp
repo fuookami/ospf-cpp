@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain layer/layer_type /// 1:1 对应 Rust bpp3d/domain/layer/layer_type.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+#include <cstdint>
+namespace ospf::framework::bpp3d {
+    enum class LayerType : uint8_t { Single, Multi, Mixed };
+}

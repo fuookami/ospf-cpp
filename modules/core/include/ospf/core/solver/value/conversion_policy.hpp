@@ -1,3 +1,6 @@
 #pragma once
-/// Solver value conversion_policy /// 1:1 å¯¹åº” Rust core/solver/value/conversion_policy.rs
-namespace ospf::core { /* placeholder */ }
+/// Conversion policy /// 1:1 ¶ÔÓ¦ Rust/core/solver/value/conversion_policy.rs
+#include <cstdint>
+namespace ospf::core {
+    enum class ConversionPolicy : uint8_t { Strict, Lenient, Auto };
+}

@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic mutation /// 1:1 å¯¹åº” Rust core/solver/heuristic/mutation.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic mutation /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/mutation.rs
+namespace ospf::core {
+    struct MutationConfig { double rate = 0.1; double strength = 0.5; };
+}

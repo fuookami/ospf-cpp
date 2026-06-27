@@ -12,10 +12,16 @@
 namespace ospf::core {
 
     /// 变量类型 / Variable type
+    /// 1:1 对应 Rust VariableType 枚举
     enum class VariableType : std::uint8_t {
-        Continuous,  ///< 连续变量 / Continuous
-        Integer,     ///< 整数变量 / Integer
-        Binary,      ///< 二元变量 / Binary (0 or 1)
+        Continuous,          ///< 连续变量 / Continuous (signed)
+        UContinuous,         ///< 无符号连续变量 / Unsigned continuous (>=0)
+        Integer,             ///< 整数变量 / Integer (signed)
+        UInteger,            ///< 无符号整数变量 / Unsigned integer (>=0)
+        Binary,              ///< 二元变量 / Binary (0 or 1)
+        Ternary,             ///< 三元变量 / Ternary (-1, 0, 1)
+        BalancedTernary,     ///< 平衡三元变量 / Balanced ternary (-1, 0, 1)
+        Percentage,          ///< 百分比变量 / Percentage (0-1)
     };
 
     /// 变量边界 / Variable bounds
@@ -25,6 +31,47 @@ namespace ospf::core {
 
         [[nodiscard]] bool is_valid() const noexcept { return lower <= upper; }
     };
+
+    /// 获取变量类型的默认边界 / Get default bounds for variable type
+    [[nodiscard]] constexpr VariableBounds default_bounds(VariableType type) noexcept {
+        switch (type) {
+            case VariableType::Continuous:
+                return {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max()};
+            case VariableType::UContinuous:
+                return {0.0, std::numeric_limits<double>::max()};
+            case VariableType::Integer:
+                return {static_cast<double>(std::numeric_limits<int>::lowest()),
+                        static_cast<double>(std::numeric_limits<int>::max())};
+            case VariableType::UInteger:
+                return {0.0, static_cast<double>(std::numeric_limits<unsigned int>::max())};
+            case VariableType::Binary:
+                return {0.0, 1.0};
+            case VariableType::Ternary:
+                return {-1.0, 1.0};
+            case VariableType::BalancedTernary:
+                return {-1.0, 1.0};
+            case VariableType::Percentage:
+                return {0.0, 1.0};
+        }
+        return {0.0, std::numeric_limits<double>::infinity()};
+    }
+
+    /// 检查变量类型是否有符号 / Check if variable type is signed
+    [[nodiscard]] constexpr bool is_signed_type(VariableType type) noexcept {
+        return type == VariableType::Continuous
+            || type == VariableType::Integer
+            || type == VariableType::Ternary
+            || type == VariableType::BalancedTernary;
+    }
+
+    /// 检查变量类型是否为整数 / Check if variable type is integer
+    [[nodiscard]] constexpr bool is_integer_type(VariableType type) noexcept {
+        return type == VariableType::Integer
+            || type == VariableType::UInteger
+            || type == VariableType::Binary
+            || type == VariableType::Ternary
+            || type == VariableType::BalancedTernary;
+    }
 
     /// 变量 / Variable: decision variable in the model
     class Variable {
@@ -57,7 +104,7 @@ namespace ospf::core {
             : registry_(registry) {}
 
         VariableBuilder& name(const std::string& n) { name_ = n; return *this; }
-        VariableBuilder& type(VariableType t) { type_ = t; return *this; }
+        VariableBuilder& type(VariableType t) { type_ = t; bounds_ = default_bounds(t); return *this; }
         VariableBuilder& lower(double l) { bounds_.lower = l; return *this; }
         VariableBuilder& upper(double u) { bounds_.upper = u; return *this; }
         VariableBuilder& bounds(double l, double u) { bounds_ = {l, u}; return *this; }

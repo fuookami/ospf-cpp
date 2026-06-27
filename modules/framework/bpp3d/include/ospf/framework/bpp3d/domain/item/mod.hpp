@@ -1,3 +1,5 @@
 #pragma once
-/// BPP3D domain/item/mod /// 1:1 对应 Rust bpp3d/domain/item/mod.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// BPP3D domain/item �ۺ�ͷ
+#include <ospf/framework/bpp3d/domain/item/item.hpp>
+#include <ospf/framework/bpp3d/domain/item/item_builder.hpp>
+#include <ospf/framework/bpp3d/domain/item/item_type.hpp>

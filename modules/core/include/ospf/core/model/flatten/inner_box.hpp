@@ -1,3 +1,9 @@
 #pragma once
-/// Model flatten inner_box /// 1:1 å¯¹åº” Rust core/model/flatten/inner_box.rs
-namespace ospf::core { /* placeholder */ }
+/// Inner box /// 1:1 ¶ÔÓ¦ Rust/core/model/flatten/inner_box.rs
+#include <vector>
+namespace ospf::core {
+    struct InnerBox {
+        std::vector<double> lower;
+        std::vector<double> upper;
+    };
+}

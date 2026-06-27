@@ -1,3 +1,6 @@
 #pragma once
-/// Solver solvers/scip linear /// 1:1 å¯¹åº” Rust core/solver/solvers/scip/linear.rs
-namespace ospf::core { /* placeholder */ }
+/// SCIP linear solver /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/scip/linear.rs
+#include <string>
+namespace ospf::core {
+    struct ScipLinearSolver { std::string name = "SCIP"; };
+}

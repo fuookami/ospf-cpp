@@ -1,3 +1,9 @@
 #pragma once
-/// Variable manual_variable /// 1:1 对应 Rust core/variable/manual_variable.rs
-namespace ospf::core { /* placeholder */ }
+/// Manual variable
+#include <ospf/core/variable.hpp>
+namespace ospf::core {
+    struct ManualVariable {
+        Variable var;
+        bool user_defined = true;
+    };
+}

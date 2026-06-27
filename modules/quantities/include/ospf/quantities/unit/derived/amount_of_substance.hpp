@@ -1,4 +1,5 @@
 #pragma once
-/// Derived unit: amount_of_substance /// 1:1 对应 Rust quantities/unit/derived/amount_of_substance.rs
 #include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+namespace ospf::quantities {
+    inline const Unit UNIT_MILLIMOLE = {DIM_AMOUNT, 0.001, "millimole", "mmol"};
+}

@@ -1,3 +1,6 @@
 #pragma once
-/// Solver heuristic policy /// 1:1 å¯¹åº” Rust core/solver/heuristic/policy.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic policy /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/policy.rs
+#include <cstdint>
+namespace ospf::core {
+    enum class SelectionPolicy : uint8_t { Tournament, Roulette, Rank };
+}

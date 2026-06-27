@@ -1,3 +1,8 @@
 #pragma once
-/// Model basic object_category /// 1:1 å¯¹åº” Rust core/model/basic/object_category.rs
-namespace ospf::core { /* placeholder */ }
+/// Object category /// 1:1 ¶ÔÓ¦ Rust/core/model/basic/object_category.rs
+#include <cstdint>
+namespace ospf::core {
+    enum class ObjectCategory : uint8_t {
+        Variable, Constraint, Objective, Intermediate
+    };
+}

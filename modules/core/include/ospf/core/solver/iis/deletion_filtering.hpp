@@ -1,3 +1,5 @@
 #pragma once
-/// Solver iis deletion_filtering /// 1:1 å¯¹åº” Rust core/solver/iis/deletion_filtering.rs
-namespace ospf::core { /* placeholder */ }
+/// IIS deletion filtering /// 1:1 ¶ÔÓ¦ Rust/core/solver/iis/deletion_filtering.rs
+namespace ospf::core {
+    struct DeletionFiltering { bool enabled = true; int max_iterations = 100; };
+}

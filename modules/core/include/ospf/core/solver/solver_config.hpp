@@ -1,3 +1,3 @@
 #pragma once
-/// Solver solver_config /// 1:1 å¯¹åº” Rust/core/solver/solver_config.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver config /// 1:1 ¶ÔÓ¦ Rust/core/solver/solver_config.rs
+#include <ospf/core/solver/config.hpp>

@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic solution_fitness /// 1:1 å¯¹åº” Rust core/solver/heuristic/solution_fitness.rs
-namespace ospf::core { /* placeholder */ }
+/// Solution fitness /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/solution_fitness.rs
+namespace ospf::core {
+    struct SolutionFitness { double objective = 0.0; bool feasible = true; };
+}

@@ -1,3 +1,10 @@
 #pragma once
-/// Model range_cache /// 1:1 对应 Rust core/model/range_cache.rs
-namespace ospf::core { /* placeholder */ }
+/// Range cache
+#include <unordered_map>
+#include <cstdint>
+namespace ospf::core {
+    struct RangeCache {
+        std::unordered_map<std::uint64_t, std::pair<double, double>> cache;
+        void clear() { cache.clear(); }
+    };
+}

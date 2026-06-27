@@ -1,3 +1,12 @@
 #pragma once
-/// Solver config/config /// 1:1 å¯¹åº” Rust/core/solver/config/config.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver config /// 1:1 ¶ÔÓ¦ Rust/core/solver/config/config.rs
+#include <string>
+namespace ospf::core {
+    struct SolverConfigDetail {
+        std::string solver_name = "auto";
+        double time_limit = -1.0;
+        double mip_gap = 1e-4;
+        int threads = 0;
+        bool suppress_output = true;
+    };
+}

@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic cross /// 1:1 å¯¹åº” Rust core/solver/heuristic/cross.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic cross /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/cross.rs
+namespace ospf::core {
+    struct CrossConfig { double rate = 0.5; };
+}

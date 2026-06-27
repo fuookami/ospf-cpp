@@ -1,16 +1,25 @@
 #pragma once
-/// ChenCelikovsky 混沌系统 / ChenCelikovsky chaotic system
-/// 1:1 对应 Rust chaotic/chen_celikovsky.rs
+/// ChenCelikovsky ����ϵͳ / ChenCelikovsky chaotic system
+/// 1:1 ��Ӧ Rust chaotic/chen_celikovsky.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct ChenCelikovskyParams {
+        double a = 36.0;
+        double b = 3.0;
+        double c = 20.0;
+
         template<typename S = double>
         [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+            S x = state[0], y = state[1], z = state[2];
+            return {S{a}*(y - x), (S{c}-S{a})*x - x*z + S{c}*y, x*y - S{b}*z};
         }
     };
+
     static constexpr char kChenCelikovskyName[] = "chen_celikovsky";
     using ChenCelikovskySystem = ChaoticSystem3D<ChenCelikovskyParams, kChenCelikovskyName>;
-}
+
+}  // namespace ospf::math::chaotic

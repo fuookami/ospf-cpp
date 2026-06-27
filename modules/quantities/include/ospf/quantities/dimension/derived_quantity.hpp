@@ -1,4 +1,9 @@
 #pragma once
-/// Dimension derived_quantity /// 1:1 å¯¹åº” Rust quantities/dimension/derived_quantity.rs
-#include <ospf/quantities/dimension.hpp>
-namespace ospf::quantities { /* placeholder */ }
+/// Derived quantity /// 1:1 ¶ÔÓ¦ Rust quantities/dimension/derived_quantity.rs
+#include <string>
+namespace ospf::quantities {
+    struct DerivedQuantity {
+        std::string name;
+        std::string symbol;
+    };
+}

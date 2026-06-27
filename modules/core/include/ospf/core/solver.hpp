@@ -28,6 +28,13 @@ namespace ospf::core {
         std::unordered_map<std::string, double> variable_values;
         std::string message;
 
+        /// MIP gap (相对间隙)
+        std::optional<double> mip_gap;
+        /// 迭代次数
+        std::optional<std::size_t> iteration_count;
+        /// 节点数 (MIP)
+        std::optional<std::size_t> node_count;
+
         [[nodiscard]] bool is_optimal() const noexcept {
             return status == SolveStatus::Optimal;
         }

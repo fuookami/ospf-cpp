@@ -1,3 +1,13 @@
 #pragma once
-/// Solver output/output /// 1:1 å¯¹åº” Rust/core/solver/output/output.rs
-namespace ospf::core { /* placeholder */ }
+/// Solver output /// 1:1 ¶ÔÓ¦ Rust/core/solver/output.rs
+#include <string>
+#include <unordered_map>
+namespace ospf::core {
+    struct SolverOutput {
+        int status_code = -1;
+        std::string status_message;
+        double objective_value = 0.0;
+        std::unordered_map<std::string, double> variable_values;
+        std::unordered_map<std::string, double> dual_values;
+    };
+}

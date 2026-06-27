@@ -1,16 +1,24 @@
 #pragma once
-/// DuffingMap 混沌系统 / DuffingMap chaotic system
-/// 1:1 对应 Rust chaotic/duffing_map.rs
+/// DuffingMap ����ϵͳ / DuffingMap chaotic system
+/// 1:1 ��Ӧ Rust chaotic/duffing_map.rs
+
 #include <ospf/math/chaotic/chaotic_factory.hpp>
+#include <cmath>
+
 namespace ospf::math::chaotic {
+
     struct DuffingMapParams {
+        double a = 2.75;
+        double b = 0.2;
+
         template<typename S = double>
-        [[nodiscard]] Point3<S> derivatives(const Point3<S>& state) const {
-            // 简化实现：返回零导数（占位）
-            // Simplified: returns zero derivatives (placeholder)
-            return {S{0}, S{0}, S{0}};
+        [[nodiscard]] Point2<S> derivatives(const Point2<S>& state) const {
+            S x = state[0], y = state[1];
+            return {y, -S{b}*x + S{a}*y - y*y*y};
         }
     };
+
     static constexpr char kDuffingMapName[] = "duffing_map";
-    using DuffingMapSystem = ChaoticSystem3D<DuffingMapParams, kDuffingMapName>;
-}
+    using DuffingMapSystem = ChaoticSystem2D<DuffingMapParams, kDuffingMapName>;
+
+}  // namespace ospf::math::chaotic

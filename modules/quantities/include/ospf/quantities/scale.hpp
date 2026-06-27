@@ -1,3 +1,9 @@
 #pragma once
-/// Quantities scale /// 1:1 å¯¹åº” Rust quantities/scale.rs
-namespace ospf::quantities { /* placeholder */ }
+/// Quantities scale /// 1:1 ¶ÔÓ¦ Rust quantities/scale.rs
+#include <string>
+namespace ospf::quantities {
+    struct Scale {
+        std::string name;
+        double factor = 1.0;
+    };
+}

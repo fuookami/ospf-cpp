@@ -687,3 +687,103 @@ TEST(IntermediateSymbol, IntegrationWithFunctionSymbol) {
     ASSERT_TRUE(result.has_value());
     EXPECT_DOUBLE_EQ(*result, 30.0);
 }
+
+// ============================================================================
+// VariableType 扩展测试 (Phase 3: 8 种变量类型)
+// ============================================================================
+
+TEST(VariableType, AllTypes) {
+    // 验证所有 8 种变量类型可用
+    EXPECT_EQ(static_cast<int>(VariableType::Continuous), 0);
+    EXPECT_EQ(static_cast<int>(VariableType::UContinuous), 1);
+    EXPECT_EQ(static_cast<int>(VariableType::Integer), 2);
+    EXPECT_EQ(static_cast<int>(VariableType::UInteger), 3);
+    EXPECT_EQ(static_cast<int>(VariableType::Binary), 4);
+    EXPECT_EQ(static_cast<int>(VariableType::Ternary), 5);
+    EXPECT_EQ(static_cast<int>(VariableType::BalancedTernary), 6);
+    EXPECT_EQ(static_cast<int>(VariableType::Percentage), 7);
+}
+
+TEST(VariableType, DefaultBounds) {
+    // Binary: 0-1
+    auto bb = default_bounds(VariableType::Binary);
+    EXPECT_DOUBLE_EQ(bb.lower, 0.0);
+    EXPECT_DOUBLE_EQ(bb.upper, 1.0);
+
+    // Percentage: 0-1
+    auto bp = default_bounds(VariableType::Percentage);
+    EXPECT_DOUBLE_EQ(bp.lower, 0.0);
+    EXPECT_DOUBLE_EQ(bp.upper, 1.0);
+
+    // Ternary: -1 to 1
+    auto bt = default_bounds(VariableType::Ternary);
+    EXPECT_DOUBLE_EQ(bt.lower, -1.0);
+    EXPECT_DOUBLE_EQ(bt.upper, 1.0);
+
+    // UContinuous: 0 to max finite
+    auto bu = default_bounds(VariableType::UContinuous);
+    EXPECT_DOUBLE_EQ(bu.lower, 0.0);
+    EXPECT_GT(bu.upper, 1e100);
+
+    // UInteger: 0 to max
+    auto ui = default_bounds(VariableType::UInteger);
+    EXPECT_DOUBLE_EQ(ui.lower, 0.0);
+    EXPECT_GT(ui.upper, 0.0);
+}
+
+TEST(VariableType, IsSigned) {
+    EXPECT_TRUE(is_signed_type(VariableType::Continuous));
+    EXPECT_FALSE(is_signed_type(VariableType::UContinuous));
+    EXPECT_TRUE(is_signed_type(VariableType::Integer));
+    EXPECT_FALSE(is_signed_type(VariableType::UInteger));
+    EXPECT_FALSE(is_signed_type(VariableType::Binary));
+    EXPECT_TRUE(is_signed_type(VariableType::Ternary));
+    EXPECT_TRUE(is_signed_type(VariableType::BalancedTernary));
+    EXPECT_FALSE(is_signed_type(VariableType::Percentage));
+}
+
+TEST(VariableType, IsInteger) {
+    EXPECT_FALSE(is_integer_type(VariableType::Continuous));
+    EXPECT_FALSE(is_integer_type(VariableType::UContinuous));
+    EXPECT_TRUE(is_integer_type(VariableType::Integer));
+    EXPECT_TRUE(is_integer_type(VariableType::UInteger));
+    EXPECT_TRUE(is_integer_type(VariableType::Binary));
+    EXPECT_TRUE(is_integer_type(VariableType::Ternary));
+    EXPECT_TRUE(is_integer_type(VariableType::BalancedTernary));
+    EXPECT_FALSE(is_integer_type(VariableType::Percentage));
+}
+
+TEST(VariableType, BuilderWithDefaultBounds) {
+    SymbolRegistry::instance().reset();
+    VariableBuilder b;
+
+    // Binary type should auto-set bounds to [0, 1]
+    auto bin = b.name("b").type(VariableType::Binary).build();
+    EXPECT_EQ(bin.type(), VariableType::Binary);
+    EXPECT_DOUBLE_EQ(bin.bounds().lower, 0.0);
+    EXPECT_DOUBLE_EQ(bin.bounds().upper, 1.0);
+
+    // Integer type should auto-set bounds
+    auto integ = b.name("n").type(VariableType::Integer).build();
+    EXPECT_EQ(integ.type(), VariableType::Integer);
+    EXPECT_TRUE(integ.bounds().is_valid());
+
+    // Percentage type should auto-set bounds to [0, 1]
+    auto pct = b.name("p").type(VariableType::Percentage).build();
+    EXPECT_EQ(pct.type(), VariableType::Percentage);
+    EXPECT_DOUBLE_EQ(pct.bounds().lower, 0.0);
+    EXPECT_DOUBLE_EQ(pct.bounds().upper, 1.0);
+}
+
+TEST(VariableType, BuilderOverrideBounds) {
+    SymbolRegistry::instance().reset();
+    VariableBuilder b;
+
+    // Can override default bounds
+    auto v = b.name("x").type(VariableType::Integer).lower(-10).upper(10).build();
+    EXPECT_EQ(v.type(), VariableType::Integer);
+    EXPECT_DOUBLE_EQ(v.bounds().lower, -10.0);
+    EXPECT_DOUBLE_EQ(v.bounds().upper, 10.0);
+}
+
+// ============================================================================

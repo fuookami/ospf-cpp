@@ -1,3 +1,6 @@
 #pragma once
-/// Solver value conversion_context /// 1:1 å¯¹åº” Rust core/solver/value/conversion_context.rs
-namespace ospf::core { /* placeholder */ }
+/// Conversion context /// 1:1 ¶ÔÓ¦ Rust/core/solver/value/conversion_context.rs
+#include <string>
+namespace ospf::core {
+    struct ConversionContext { std::string source_unit; std::string target_unit; };
+}

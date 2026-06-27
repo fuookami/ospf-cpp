@@ -1,3 +1,13 @@
 #pragma once
-/// Symbol symbol /// 1:1 å¯¹åº” Rust core/symbol/symbol.rs
-namespace ospf::core { /* placeholder */ }
+/// Symbol /// 1:1 ¶ÔÓ¦ Rust core/symbol/symbol.rs
+#include <string>
+#include <cstdint>
+namespace ospf::core {
+    enum class SymbolType : uint8_t { Variable, Constraint, Objective, Intermediate };
+    struct Symbol {
+        std::uint64_t id = 0;
+        std::string name;
+        SymbolType type = SymbolType::Variable;
+        [[nodiscard]] bool operator==(const Symbol& other) const { return id == other.id; }
+    };
+}

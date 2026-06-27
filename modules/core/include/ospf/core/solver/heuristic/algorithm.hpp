@@ -1,3 +1,10 @@
 #pragma once
-/// Solver heuristic algorithm /// 1:1 å¯¹åº” Rust core/solver/heuristic/algorithm.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic algorithm /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/algorithm.rs
+#include <string>
+namespace ospf::core {
+    struct HeuristicAlgorithm {
+        std::string name = "auto";
+        int max_iterations = 100;
+        double time_limit = 10.0;
+    };
+}

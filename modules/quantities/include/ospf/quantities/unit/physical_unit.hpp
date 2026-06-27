@@ -1,4 +1,12 @@
 #pragma once
-/// Unit physical_unit /// 1:1 å¯¹åº” Rust quantities/unit/physical_unit.rs
+/// Physical unit /// 1:1 ¶ÔÓ¦ Rust quantities/unit/physical_unit.rs
 #include <ospf/quantities/unit.hpp>
-namespace ospf::quantities { /* placeholder */ }
+#include <string>
+namespace ospf::quantities {
+    struct PhysicalUnit {
+        Dimension dimension;
+        double to_si_factor = 1.0;
+        std::string name;
+        std::string symbol;
+    };
+}

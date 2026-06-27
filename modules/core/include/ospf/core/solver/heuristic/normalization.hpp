@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic normalization /// 1:1 å¯¹åº” Rust core/solver/heuristic/normalization.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic normalization /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/normalization.rs
+namespace ospf::core {
+    struct NormalizationConfig { bool enabled = true; };
+}

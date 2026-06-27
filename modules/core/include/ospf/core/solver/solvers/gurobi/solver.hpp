@@ -75,10 +75,25 @@ namespace ospf::core {
                     if (ub >= 1e30) ub = GRB_INFINITY;
 
                     char vtype = GRB_CONTINUOUS;
-                    if (var.type() == VariableType::Integer) {
-                        vtype = GRB_INTEGER;
-                    } else if (var.type() == VariableType::Binary) {
-                        vtype = GRB_BINARY;
+                    switch (var.type()) {
+                        case VariableType::Integer:
+                        case VariableType::UInteger:
+                            vtype = GRB_INTEGER;
+                            break;
+                        case VariableType::Binary:
+                        case VariableType::Ternary:
+                        case VariableType::BalancedTernary:
+                            vtype = GRB_BINARY;
+                            break;
+                        case VariableType::Percentage:
+                            // Percentage: continuous [0,1]
+                            if (lb < 0.0) lb = 0.0;
+                            if (ub > 1.0) ub = 1.0;
+                            vtype = GRB_CONTINUOUS;
+                            break;
+                        default:
+                            vtype = GRB_CONTINUOUS;
+                            break;
                     }
 
                     grb_vars[var.name()] = grb_model.addVar(
@@ -161,6 +176,12 @@ namespace ospf::core {
                     for (const auto& [name, var] : grb_vars) {
                         result.variable_values[name] = var.get(GRB_DoubleAttr_X);
                     }
+
+                    // 提取 MIP gap / Extract MIP gap
+                    try {
+                        result.mip_gap = grb_model.get(GRB_DoubleAttr_MIPGap);
+                    } catch (...) {}
+
                 } else if (status == GRB_INFEASIBLE) {
                     result.status = SolveStatus::Infeasible;
                     result.message = "Model is infeasible";

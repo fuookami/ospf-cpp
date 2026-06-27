@@ -1,3 +1,10 @@
 #pragma once
-/// Quantities functional /// 1:1 å¯¹åº” Rust quantities/functional.rs
-namespace ospf::quantities { /* placeholder */ }
+/// Quantities functional /// 1:1 ¶ÔÓ¦ Rust quantities/functional.rs
+#include <functional>
+namespace ospf::quantities {
+    template<typename V, typename U>
+    struct QuantityFunctional {
+        V value;
+        U unit;
+    };
+}

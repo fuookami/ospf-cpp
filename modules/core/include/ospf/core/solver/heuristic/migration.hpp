@@ -1,3 +1,5 @@
 #pragma once
-/// Solver heuristic migration /// 1:1 å¯¹åº” Rust core/solver/heuristic/migration.rs
-namespace ospf::core { /* placeholder */ }
+/// Heuristic migration /// 1:1 ¶ÔÓ¦ Rust/core/solver/heuristic/migration.rs
+namespace ospf::core {
+    struct MigrationConfig { int interval = 10; int count = 5; };
+}

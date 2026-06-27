@@ -1,4 +1,9 @@
 #pragma once
-/// Dimension fundamental_quantity /// 1:1 å¯¹åº” Rust quantities/dimension/fundamental_quantity.rs
-#include <ospf/quantities/dimension.hpp>
-namespace ospf::quantities { /* placeholder */ }
+/// Fundamental quantity /// 1:1 ¶ÔÓ¦ Rust quantities/dimension/fundamental_quantity.rs
+#include <string>
+namespace ospf::quantities {
+    struct FundamentalQuantity {
+        std::string name;
+        std::string symbol;
+    };
+}

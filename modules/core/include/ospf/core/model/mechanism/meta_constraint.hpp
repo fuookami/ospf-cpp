@@ -1,3 +1,9 @@
 #pragma once
-/// Model mechanism meta_constraint /// 1:1 å¯¹åº” Rust core/model/mechanism/meta_constraint.rs
-namespace ospf::core { /* placeholder */ }
+/// Meta constraint /// 1:1 ¶ÔÓ¦ Rust/core/model/mechanism/meta_constraint.rs
+#include <string>
+namespace ospf::core {
+    struct MetaConstraint {
+        std::string name;
+        std::string expression;
+    };
+}

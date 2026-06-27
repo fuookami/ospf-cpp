@@ -1,3 +1,6 @@
 #pragma once
-/// BPP3D domain item/item_type /// 1:1 对应 Rust bpp3d/domain/item/item_type.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// BPP3D domain/item/item_type
+#include <cstdint>
+namespace ospf::framework::bpp3d {
+    enum class ItemType : uint8_t { Cuboid, Cylinder, Irregular };
+}

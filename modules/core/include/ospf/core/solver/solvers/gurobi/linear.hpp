@@ -1,3 +1,8 @@
 #pragma once
-/// Solver solvers/gurobi linear /// 1:1 å¯¹åº” Rust core/solver/solvers/gurobi/linear.rs
-namespace ospf::core { /* placeholder */ }
+/// Gurobi linear solver /// 1:1 ¶ÔÓ¦ Rust/core/solver/solvers/gurobi/linear.rs
+#ifdef OSPF_ENABLE_GUROBI
+#include <ospf/core/solver/solvers/gurobi/solver.hpp>
+namespace ospf::core {
+    using GurobiLinearSolver = GurobiSolver;
+}
+#endif

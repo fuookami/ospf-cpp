@@ -1,3 +1,9 @@
 #pragma once
-/// BPP3D application renderer /// 1:1 å¯¹åº” Rust bpp3d/application/renderer.rs
-namespace ospf::framework::bpp3d { /* placeholder */ }
+/// BPP3D application/renderer /// 1:1 ¶ÔÓ¦ Rust bpp3d/application/renderer.rs
+#include <string>
+namespace ospf::framework::bpp3d {
+    struct Renderer {
+        std::string format = "json";
+        bool pretty_print = true;
+    };
+}

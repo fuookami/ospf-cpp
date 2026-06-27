@@ -214,17 +214,17 @@ TEST(ChaoticFactory, Thomas) { ThomasSystem s; auto r = s.iterate({1.0,1.0,1.0},
 TEST(ChaoticFactory, NoseHoover) { NoseHooverSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, Lorenz84) { Lorenz84System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, Lorenz96) { Lorenz96System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, VanDerPol) { VanDerPolSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, DuffingEquation) { DuffingEquationSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, LotkaVolterra) { LotkaVolterraSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, NewtonIterate) { NewtonIterateSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, Ikeda) { IkedaSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, Tinkerbell) { TinkerbellSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, VanDerPol) { VanDerPolSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, DuffingEquation) { DuffingEquationSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, LotkaVolterra) { LotkaVolterraSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, NewtonIterate) { NewtonIterateSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, Ikeda) { IkedaSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, Tinkerbell) { TinkerbellSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, RabinovichFabrikant) { RabinovichFabrikantSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, Singer) { SingerSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, Rucklidge) { RucklidgeSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, Finance) { FinanceSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticFactory, Brusselator) { BrusselatorSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory, Brusselator) { BrusselatorSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, CapacitanceEquation) { CapacitanceEquationSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, CircuitChaotic) { CircuitChaoticSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory, BiologyChaotic) { BiologyChaoticSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
@@ -248,7 +248,7 @@ TEST(ChaoticFactory, WimolBanlue) { WimolBanlueSystem s; auto r = s.iterate({1.0
 
 // -- Additional factory systems (2 tests each) --
 TEST(ChaoticFactory2, AizawaFinite) { AizawaSystem s; auto r = s.iterate({0.1,0.1,0.1}, 100, 0.01); EXPECT_TRUE(std::isfinite(r[0]) && std::isfinite(r[1]) && std::isfinite(r[2])); }
-TEST(ChaoticFactory2, ChenFinite) { ChenSystem s; auto r = s.iterate({1.0,1.0,1.0}, 200, 0.005); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticFactory2, ChenFinite) { ChenSystem s; auto r = s.iterate({1.0,1.0,1.0}, 200, 0.001); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory2, LorenzFinite) { auto r = lorenz_iterate({1.0,1.0,1.0}, 200, 0.005); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory2, RosslerFinite) { auto r = rossler_iterate({1.0,1.0,1.0}, 200, 0.005); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticFactory2, HenonFinite) { HenonSystem sys; auto r = sys.iterate({0.1, 0.1}, 200, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
@@ -385,7 +385,7 @@ TEST(Integration, FractalWorkflow) {
 
 // Additional chaotic system tests (1 each for remaining systems)
 TEST(ChaoticExtra, AnishchenkoAstakhov) { AnishchenkoAstakhovSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, ArnoldTongue) { ArnoldTongueSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, ArnoldTongue) { ArnoldTongueSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, ArnoldsCatMap) { ArnoldsCatMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, BakersMap) { BakersMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, BogdanovMap) { BogdanovMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
@@ -393,37 +393,37 @@ TEST(ChaoticExtra, BurkeShaw) { BurkeShawSystem s; auto r = s.iterate({1.0,1.0,1
 TEST(ChaoticExtra, ChuaAttractor) { ChuaAttractorSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, ChuaCircuit) { ChuaCircuitSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, CircleMap) { CircleMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, ComplexQuadratic) { ComplexQuadraticSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, ComplexSquaring) { ComplexSquaringSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, ComplexQuadratic) { ComplexQuadraticSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, ComplexSquaring) { ComplexSquaringSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, CoupledLorenz) { CoupledLorenzSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, DoublePendulum) { DoublePendulumSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, DuffingMap) { DuffingMapSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, DoublePendulum) { DoublePendulumSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, DuffingMap) { DuffingMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, Dyadic) { DyadicSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, Exponential) { ExponentialSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, GaussIterated) { GaussIteratedSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, Exponential) { ExponentialSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, GaussIterated) { GaussIteratedSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, GenesioTesi) { GenesioTesiSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, Gingerbreadman) { GingerbreadmanSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, Gingerbreadman) { GingerbreadmanSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, HindmarshRose) { HindmarshRoseSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, IntervalExchange) { IntervalExchangeSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, KaplanYorke) { KaplanYorkeSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, IntervalExchange) { IntervalExchangeSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, KaplanYorke) { KaplanYorkeSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, KickedRotator) { KickedRotatorSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, LogisticFinite) { EXPECT_TRUE(std::isfinite(logistic_iterate(0.1, 3.9, 100))); }
 TEST(ChaoticExtra, LorenzAttractor) { LorenzAttractorSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, LorenzMod1) { LorenzMod1System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, LorenzMod2) { LorenzMod2System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, LorenzStenflo) { LorenzStenfloSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, LorenzStenflo) { LorenzStenfloSystem s; auto r = s.iterate(Point3<double>{1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, Lozi) { LoziSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, Martin) { MartinSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, Martin) { MartinSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, NBody) { NBodySystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, NewtonLeipnik) { NewtonLeipnikSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, SineMap) { SineMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, SinusMap) { SinusMapSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, Symplectic) { SymplecticSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, Symplectic) { SymplecticSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, Tent) { TentSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, ThomasCyclicallySymmetric) { ThomasCyclicallySymmetricSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, ThreeScrollTsucs1) { ThreeScrollTsucs1System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 TEST(ChaoticExtra, ThreeScrollTsucs2) { ThreeScrollTsucs2System s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
-TEST(ChaoticExtra, Zaslavskii) { ZaslavskiiSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra, Zaslavskii) { ZaslavskiiSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 
 // Additional combinatorics tests
 TEST(CombininatoricsExtra, CombinationLarge) {
@@ -483,4 +483,4 @@ TEST(ChaoticFinite, Rossler) { auto r = rossler_iterate({1.0,1.0,1.0}, 500, 0.00
 TEST(ChaoticFinite, Logistic) { EXPECT_TRUE(std::isfinite(logistic_iterate(0.1, 3.99, 1000))); }
 TEST(ChaoticFinite, Henon) { HenonSystem sys; auto r = sys.iterate({0.1,0.1}, 500, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
 
-TEST(ChaoticExtra2, Sinusoidal) { SinusoidalSystem s; auto r = s.iterate({1.0,1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
+TEST(ChaoticExtra2, Sinusoidal) { SinusoidalSystem s; auto r = s.iterate(Point2<double>{1.0,1.0}, 10, 0.01); EXPECT_TRUE(std::isfinite(r[0])); }
