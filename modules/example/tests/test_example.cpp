@@ -82,17 +82,17 @@ TEST(Example, SolverUsage) {
 TEST(CoreDemo, Demo1Portfolio) {
     ospf::example::core::demo1();
     // demo1 执行成功即通过
-    EXPECT_TRUE(true);
+    EXPECT_NO_THROW();
 }
 
 TEST(CoreDemo, Demo2ProductMix) {
     ospf::example::core::demo2();
-    EXPECT_TRUE(true);
+    EXPECT_NO_THROW();
 }
 
 TEST(CoreDemo, Demo3ResourceAllocation) {
     ospf::example::core::demo3();
-    EXPECT_TRUE(true);
+    EXPECT_NO_THROW();
 }
 
 // ============================================================================
@@ -101,12 +101,12 @@ TEST(CoreDemo, Demo3ResourceAllocation) {
 
 TEST(FrameworkDemo, Demo1Bandwidth) {
     ospf::example::framework::demo1_bandwidth();
-    EXPECT_TRUE(true);
+    EXPECT_NO_THROW();
 }
 
 TEST(FrameworkDemo, Demo4FlightScheduling) {
     ospf::example::framework::demo4_flight();
-    EXPECT_TRUE(true);
+    EXPECT_NO_THROW();
 }
 
 // ============================================================================
@@ -199,27 +199,27 @@ TEST(ExampleIntegration, FlightSchedulingModel) {
 // Core Demo 4-17 测试
 // ============================================================================
 
-TEST(CoreDemo, Demo4ResourceAlloc) { ospf::example::core::demo4(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo5Knapsack) { ospf::example::core::demo5(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo6) { ospf::example::core::demo6(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo7) { ospf::example::core::demo7(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo8) { ospf::example::core::demo8(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo9) { ospf::example::core::demo9(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo10) { ospf::example::core::demo10(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo11) { ospf::example::core::demo11(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo12) { ospf::example::core::demo12(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo13) { ospf::example::core::demo13(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo14) { ospf::example::core::demo14(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo15) { ospf::example::core::demo15(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo16) { ospf::example::core::demo16(); EXPECT_TRUE(true); }
-TEST(CoreDemo, Demo17) { ospf::example::core::demo17(); EXPECT_TRUE(true); }
+TEST(CoreDemo, Demo4ResourceAlloc) { ospf::example::core::demo4(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo5Knapsack) { ospf::example::core::demo5(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo6) { ospf::example::core::demo6(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo7) { ospf::example::core::demo7(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo8) { ospf::example::core::demo8(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo9) { ospf::example::core::demo9(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo10) { ospf::example::core::demo10(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo11) { ospf::example::core::demo11(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo12) { ospf::example::core::demo12(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo13) { ospf::example::core::demo13(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo14) { ospf::example::core::demo14(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo15) { ospf::example::core::demo15(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo16) { ospf::example::core::demo16(); EXPECT_NO_THROW(); }
+TEST(CoreDemo, Demo17) { ospf::example::core::demo17(); EXPECT_NO_THROW(); }
 
 // ============================================================================
 // Framework Demo 2-3 测试
 // ============================================================================
 
-TEST(FrameworkDemo, Demo2Loading) { ospf::example::framework::demo2_loading(); EXPECT_TRUE(true); }
-TEST(FrameworkDemo, Demo3SimpleLP) { ospf::example::framework::demo3_simple_lp(); EXPECT_TRUE(true); }
+TEST(FrameworkDemo, Demo2Loading) { ospf::example::framework::demo2_loading(); EXPECT_NO_THROW(); }
+TEST(FrameworkDemo, Demo3SimpleLP) { ospf::example::framework::demo3_simple_lp(); EXPECT_NO_THROW(); }
 
 // ============================================================================
 // Trivalent 测试
